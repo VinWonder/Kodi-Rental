@@ -1,0 +1,20 @@
+# Secrets & local config
+.env
+*.env.local
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Runtime data (uploads, generated receipts/reports)
+backend/media/
+
+# Logs & OS / editor files
+*.log
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
