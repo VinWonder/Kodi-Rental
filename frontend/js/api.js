@@ -134,10 +134,23 @@ export async function login(phone, password) {
     const detail = Array.isArray(data.detail) ? data.detail.map((d) => d.msg.replace(/^Value error, /, '')).join('; ') : data.detail;
     throw new ApiError(res.status, detail || 'Sign-in failed');
   }
+  return adoptSession(data);
+}
+
+/** Store tokens from register / login / accept-invite and load the profile. */
+export async function adoptSession(data) {
   saveTokens(data);
   const profile = await api('/api/v1/auth/me');
   session.profile = profile;
   authEvents.dispatchEvent(new CustomEvent('login', { detail: profile }));
+  return profile;
+}
+
+/** Re-read the profile (memberships, tenancies) after they change. */
+export async function reloadProfile() {
+  const profile = await api('/api/v1/auth/me');
+  session.profile = profile;
+  authEvents.dispatchEvent(new CustomEvent('profile', { detail: profile }));
   return profile;
 }
 

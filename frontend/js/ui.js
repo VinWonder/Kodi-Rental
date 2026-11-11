@@ -35,7 +35,10 @@ export function toast(message, { variant = 'dark', action = null, autohide = tru
       ${action ? `<button type="button" class="btn btn-sm btn-light me-2 fw-semibold" data-action>${esc(action.label)}</button>` : ''}
       <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
     </div>`;
-  document.getElementById('toasts').append(el);
+  const stack = document.getElementById('toasts');
+  // Keep at most three on screen: the oldest gives way.
+  while (stack.children.length >= 3) stack.firstElementChild.remove();
+  stack.append(el);
   if (action) el.querySelector('[data-action]').addEventListener('click', () => { action.onClick(); window.bootstrap.Toast.getInstance(el)?.hide(); });
   const t = new window.bootstrap.Toast(el, { autohide, delay });
   el.addEventListener('hidden.bs.toast', () => el.remove());

@@ -43,8 +43,13 @@ export async function registerServiceWorker() {
     });
   });
 
+  // Reload only when an existing worker is replaced by an update the user
+  // accepted. On a first visit the new worker just takes control: reloading
+  // then would wipe whatever the user is typing.
+  let hadController = Boolean(navigator.serviceWorker.controller);
   let reloading = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) { hadController = true; return; }
     if (reloading) return;
     reloading = true;
     window.location.reload();

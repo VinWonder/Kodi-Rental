@@ -6,7 +6,7 @@
   <title>Kodi Rentals</title>
   <meta name="description" content="Caretaker-free rental management for Kenya: M-Pesa rent, receipts, repairs, chat and calls.">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://localhost:8000; media-src 'self' blob: http://localhost:8000; connect-src 'self' http://localhost:8000 ws: wss:; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http://localhost:8000; media-src 'self' blob: http://localhost:8000; connect-src 'self' http://localhost:8000 ws: wss:; worker-src 'self'; manifest-src 'self'; base-uri 'self'; form-action 'self'">
 
   <!-- PWA -->
   <link rel="manifest" href="/manifest.json">
@@ -24,24 +24,35 @@
 
   <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.min.css">
   <link rel="stylesheet" href="/css/app.css">
+  <script src="/vendor/bootstrap/bootstrap.bundle.min.js" defer></script>
   <script type="module" src="/js/app.js"></script>
 </head>
 <body>
   <a class="visually-hidden-focusable" href="#main">Skip to content</a>
 
   <header class="kodi-topbar sticky-top">
-    <nav class="container d-flex align-items-center gap-2 py-2">
-      <a class="d-flex align-items-center gap-2 text-decoration-none me-auto" href="#/">
+    <nav class="kodi-topbar-inner d-flex align-items-center gap-2 py-2">
+      <a class="d-flex align-items-center gap-2 text-decoration-none flex-shrink-0" href="#/" aria-label="Kodi home">
         <img src="/icons/icon-192.png" alt="" width="32" height="32" class="rounded-3">
-        <span class="fw-bold text-body">Kodi</span>
+        <span class="fw-bold text-body d-none d-sm-inline">Kodi</span>
       </a>
+      <div id="account-switch" class="kodi-account flex-grow-1 min-w-0"></div>
       <span id="net-status" class="kodi-pill" role="status" aria-live="polite">Online</span>
+      <div id="bell" class="dropdown d-none">
+        <button class="btn btn-icon btn-light position-relative" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications" id="bell-button">
+          <svg class="kodi-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>
+          <span class="kodi-bell-count d-none" id="bell-count">0</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow kodi-bell-menu" id="bell-list"></ul>
+      </div>
       <div id="user-menu" class="dropdown d-none">
-        <button class="btn btn-sm btn-light rounded-pill dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"
-                id="user-menu-button">Account</button>
+        <button class="btn btn-sm btn-light rounded-pill d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false" id="user-menu-button">Account</button>
         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-          <li><a class="dropdown-item" href="#/">Home</a></li>
-          <li><a class="dropdown-item" href="#/settings">Notifications &amp; offline</a></li>
+          <li><a class="dropdown-item" href="#/notifications">Notifications</a></li>
+          <li><a class="dropdown-item" href="#/settings">Settings &amp; offline</a></li>
+          <li data-landlord-only><a class="dropdown-item" href="#/reports">Reports</a></li>
+          <li data-landlord-only><a class="dropdown-item" href="#/leases">Leases</a></li>
+          <li><a class="dropdown-item" href="#/vacancies">Public vacancies</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><button class="dropdown-item text-danger" id="logout-button" type="button">Sign out</button></li>
         </ul>
@@ -50,7 +61,7 @@
   </header>
 
   <!-- Install prompt (Android / desktop Chrome & Edge) -->
-  <aside id="install-banner" class="kodi-banner container d-none" aria-label="Install app">
+  <aside id="install-banner" class="kodi-banner d-none" aria-label="Install app">
     <div class="kodi-glass d-flex align-items-center gap-3 p-3">
       <img src="/icons/icon-192.png" alt="" width="44" height="44" class="rounded-3 flex-shrink-0">
       <div class="flex-grow-1 small">
@@ -63,7 +74,7 @@
   </aside>
 
   <!-- iOS Safari has no install prompt: explain the Share > Add to Home Screen steps -->
-  <aside id="ios-install-banner" class="kodi-banner container d-none" aria-label="Add to Home Screen">
+  <aside id="ios-install-banner" class="kodi-banner d-none" aria-label="Add to Home Screen">
     <div class="kodi-glass d-flex align-items-start gap-3 p-3">
       <img src="/icons/apple-touch-icon.png" alt="" width="44" height="44" class="rounded-3 flex-shrink-0">
       <div class="flex-grow-1 small">
@@ -75,10 +86,15 @@
     </div>
   </aside>
 
-  <main id="main" class="container py-3 pb-5" tabindex="-1">
-    <div class="text-center text-secondary py-5" id="boot">Loading…</div>
-  </main>
+  <div class="kodi-layout">
+    <nav id="sidenav" class="kodi-sidenav" aria-label="Main"></nav>
+    <main id="main" tabindex="-1">
+      <div class="text-center text-secondary py-5" id="boot">Loading…</div>
+    </main>
+  </div>
+  <nav id="bottomnav" class="kodi-bottomnav" aria-label="Main"></nav>
 
-  <div class="toast-container position-fixed bottom-0 start-50 translate-middle-x p-3" id="toasts" aria-live="polite"></div>
+  <div id="call-root"></div>
+  <div class="toast-container position-fixed start-50 translate-middle-x p-3" id="toasts" aria-live="polite"></div>
 </body>
 </html>

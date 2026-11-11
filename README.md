@@ -20,8 +20,8 @@ statements, all from the browser, online or offline.
 | 1 | Relational schema (`database/`) | Done |
 | 2 | API, M-Pesa hooks, WebSocket/WebRTC signalling, PDF/CSV statements & receipts | Done |
 | 3 | PWA: manifest, service worker, offline statements, install banners, push notifications | Done |
-| 4 | Full UI: landlord dashboards, tenant portal, chat & call windows | Next |
-| 5 | Integration, end-to-end workflows, deployment | Planned |
+| 4 | Full UI: landlord dashboards, tenant portal, chat & call windows | Done |
+| 5 | Integration, end-to-end workflows, deployment | Next |
 
 ## Project layout
 
@@ -48,8 +48,15 @@ frontend/
   sw.js                      Service worker: caching strategies, offline pack, push
   offline.html               Fallback page
   css/app.css                Theme tokens (light/dark, glass surfaces)
-  js/                        config, api (auth + refresh), pwa (SW, install, push),
-                             offline (offline pack), ui, app (router + screens)
+  js/
+    app.js                   Routes, auth guard, global wiring
+    router.js shell.js       Hash router; layout, nav, render scopes
+    api.js realtime.js       REST client (token refresh); WebSocket client
+    calls.js                 WebRTC voice/video calls
+    components.js            Icons, modals/forms, badges, charts, uploads, signature pad
+    pwa.js offline.js        Service worker, install, push; offline pack
+    views/                   One module per area (dashboard, properties, tenants,
+                             leases, billing, issues, chat, reports, settings, ...)
   icons/  vendor/bootstrap/
 ```
 
@@ -81,6 +88,32 @@ to try the app on a phone, serve it over HTTPS, for example with
 `KODI_PUBLIC_BASE_URL` so Safaricom can reach the M-Pesa callbacks.
 
 See [backend/README.md](backend/README.md) for M-Pesa setup and the statement/receipt endpoints.
+
+## The app (Phase 4)
+
+**Landlords:**
+- **Dashboard:** live KPIs, a billed-vs-collected chart and an occupancy donut.
+- **Properties and units:** a status-coloured unit grid, bulk "A1-A12" creation, photo galleries, condition logs and state history.
+- **Tenants:** ID and next-of-kin onboarding, and one-tap invite links by WhatsApp or SMS.
+- **Allocation:** prefilled tenancy terms; the tenant e-signs.
+- **Billing:** invoices, M-Pesa STK prompts with a live "waiting for PIN" panel, cash and bank payments, and assigning unmatched Paybill payments.
+- **Repairs:** a board with priority, contractor dispatch, costs and an expense log.
+- **Reports:** on-screen tables with PDF and CSV downloads.
+- **Settings:** M-Pesa Daraja setup, team roles and contractors.
+
+**Tenants:**
+- A balance hero and "Pay with M-Pesa".
+- Paybill and account-number instructions.
+- Lease signing on a signature pad.
+- Repair reports with photos and video, a progress stepper and ratings.
+- Statement and receipts, readable offline.
+
+**Both:**
+- Chat with photos, files and voice notes, typing indicators and read receipts.
+- In-browser voice and video calls over WebRTC, starting on the rear camera so tenants can show damage.
+- Notifications, a light/dark theme, and layouts for phone and desktop.
+
+There is also a public vacancy search at `#/vacancies` that needs no sign-in.
 
 ## PWA behaviour
 

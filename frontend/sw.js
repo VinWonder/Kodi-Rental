@@ -10,7 +10,7 @@
  */
 'use strict';
 
-const VERSION = '1.0.1';
+const VERSION = '2.0.1';
 const SHELL_CACHE = `kodi-shell-${VERSION}`;
 const RUNTIME_CACHE = 'kodi-runtime-v1';
 const DATA_CACHE = 'kodi-data-v1';
@@ -22,7 +22,11 @@ const MAX_FILES = 80;
 const SHELL = [
   '/', '/index.html', '/offline.html', '/manifest.json',
   '/css/app.css',
-  '/js/config.js', '/js/api.js', '/js/pwa.js', '/js/offline.js', '/js/ui.js', '/js/app.js',
+  '/js/api.js', '/js/app.js', '/js/calls.js', '/js/components.js', '/js/config.js', '/js/offline.js', '/js/pwa.js',
+  '/js/realtime.js', '/js/router.js', '/js/shell.js', '/js/state.js', '/js/ui.js', '/js/views/auth.js',
+  '/js/views/billing.js', '/js/views/chat.js', '/js/views/dashboard.js', '/js/views/home.js', '/js/views/issues.js',
+  '/js/views/leases.js', '/js/views/properties.js', '/js/views/reports.js', '/js/views/settings.js',
+  '/js/views/tenants.js', '/js/views/vacancies.js',
   '/vendor/bootstrap/bootstrap.min.css', '/vendor/bootstrap/bootstrap.bundle.min.js',
   '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-512.png',
   '/icons/apple-touch-icon.png', '/icons/badge-96.png', '/icons/favicon-32.png', '/icons/favicon.ico',
@@ -38,6 +42,11 @@ const OFFLINE_DATA = [
   /^\/api\/v1\/accounts\/[^/]+\/reports\/(defaulters|monthly-revenue|maintenance-overhead|occupancy|unit-financials|exports)$/,
   /^\/api\/v1\/accounts\/[^/]+\/tenants\/[^/]+\/statement$/,
   /^\/api\/v1\/accounts\/[^/]+\/receipts\/[^/]+$/,
+  /^\/api\/v1\/accounts\/[^/]+\/(properties|tenants|units|leases|issues|contractors)(\/[^/]+)?$/,
+  /^\/api\/v1\/accounts\/[^/]+$/,
+  /^\/api\/v1\/conversations$/,
+  /^\/api\/v1\/conversations\/[^/]+\/messages$/,
+  /^\/api\/v1\/locations\/counties$/,
 ];
 // Immutable files addressed by id: serve from cache when present.
 const IMMUTABLE_FILES = [
@@ -104,8 +113,8 @@ async function handleNavigation(event) {
     if (preloaded) return preloaded;
     return await fetch(event.request);
   } catch (err) {
-    const shell = await caches.match('/index.html', { ignoreSearch: true });
-    return shell || (await caches.match('/offline.html')) || Response.error();
+    const shell = await caches.match('/index.html', { ignoreSearch: true, ignoreVary: true });
+    return shell || (await caches.match('/offline.html', { ignoreVary: true })) || Response.error();
   }
 }
 
@@ -171,9 +180,12 @@ async function networkOnlyApi(request) {
 }
 
 async function staleWhileRevalidate(request) {
-  const shellHit = await caches.match(request, { ignoreSearch: true, cacheName: SHELL_CACHE });
+  // ignoreVary: the server adds 'Vary: Origin, Accept-Encoding', and browsers send
+  // an Origin header with module scripts but not with the precache requests, so a
+  // strict match would miss every ES module offline.
+  const shellHit = await caches.match(request, { ignoreSearch: true, ignoreVary: true, cacheName: SHELL_CACHE });
   const runtime = await caches.open(RUNTIME_CACHE);
-  const runtimeHit = shellHit ? null : await runtime.match(request);
+  const runtimeHit = shellHit ? null : await runtime.match(request, { ignoreVary: true });
   const network = fetch(request).then(async (response) => {
     if (response.ok && response.type === 'basic' && !shellHit) await runtime.put(request, response.clone());
     return response;
