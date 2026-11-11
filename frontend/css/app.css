@@ -1,0 +1,122 @@
+/* Kodi Rentals: base theme for the PWA shell. Phase 4 builds the full UI on these tokens. */
+:root {
+  --kodi-primary: #0d6efd;
+  --kodi-primary-deep: #084298;
+  --kodi-bg: #f4f7fc;
+  --kodi-surface: rgba(255, 255, 255, 0.78);
+  --kodi-border: rgba(13, 110, 253, 0.12);
+  --kodi-text: #1b2333;
+  --kodi-muted: #5f6b80;
+  --kodi-success: #198754;
+  --kodi-warning: #b26a00;
+  --kodi-danger: #c62828;
+  --kodi-radius: 18px;
+  --kodi-shadow: 0 10px 30px rgba(8, 66, 152, 0.08), 0 2px 6px rgba(8, 66, 152, 0.06);
+  --kodi-safe-bottom: env(safe-area-inset-bottom, 0px);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --kodi-bg: #0b1530;
+    --kodi-surface: rgba(22, 34, 64, 0.72);
+    --kodi-border: rgba(140, 180, 255, 0.14);
+    --kodi-text: #e8eefc;
+    --kodi-muted: #9aa8c6;
+    --kodi-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    color-scheme: dark;
+  }
+  :root:not([data-theme="light"]) body { --bs-body-color: var(--kodi-text); --bs-secondary-color: var(--kodi-muted); }
+  :root:not([data-theme="light"]) .table { --bs-table-color: var(--kodi-text); --bs-table-bg: transparent; --bs-table-striped-color: var(--kodi-text); }
+  :root:not([data-theme="light"]) .btn-light { --bs-btn-bg: rgba(255,255,255,.08); --bs-btn-color: var(--kodi-text); --bs-btn-border-color: transparent; }
+  :root:not([data-theme="light"]) .form-control { background: rgba(255,255,255,.06); color: var(--kodi-text); border-color: var(--kodi-border); }
+}
+
+html, body { min-height: 100%; }
+body {
+  background:
+    radial-gradient(1200px 500px at 110% -10%, rgba(13, 110, 253, 0.14), transparent 60%),
+    radial-gradient(900px 400px at -10% 110%, rgba(25, 135, 84, 0.10), transparent 60%),
+    var(--kodi-bg);
+  background-attachment: fixed;
+  color: var(--kodi-text);
+  padding-bottom: var(--kodi-safe-bottom);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Installed app: no browser chrome, so respect notches. */
+@media (display-mode: standalone) {
+  .kodi-topbar { padding-top: env(safe-area-inset-top, 0px); }
+}
+
+.kodi-topbar {
+  background: color-mix(in srgb, var(--kodi-bg) 70%, transparent);
+  backdrop-filter: saturate(160%) blur(14px);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--kodi-border);
+}
+
+.kodi-glass {
+  background: var(--kodi-surface);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid var(--kodi-border);
+  border-radius: var(--kodi-radius);
+  box-shadow: var(--kodi-shadow);
+}
+
+.kodi-card {
+  background: var(--kodi-surface);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid var(--kodi-border);
+  border-radius: var(--kodi-radius);
+  box-shadow: var(--kodi-shadow);
+  padding: 1.25rem;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.kodi-card:hover { transform: translateY(-2px); }
+
+.kodi-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.kodi-stat { font-size: 1.6rem; font-weight: 700; letter-spacing: -.02em; }
+.kodi-measure { max-width: 34rem; }
+
+.kodi-pill {
+  font-size: .75rem; font-weight: 600; padding: .25rem .65rem; border-radius: 999px;
+  background: rgba(25, 135, 84, .12); color: var(--kodi-success);
+  transition: background .2s ease, color .2s ease;
+}
+.kodi-pill::before { content: ""; display: inline-block; width: .5rem; height: .5rem; margin-right: .35rem;
+  border-radius: 50%; background: currentColor; vertical-align: middle; }
+body.is-offline .kodi-pill { background: rgba(178, 106, 0, .14); color: var(--kodi-warning); }
+body.is-offline .kodi-pill::before { animation: kodi-pulse 1.4s ease-in-out infinite; }
+
+.kodi-banner { margin-top: .75rem; animation: kodi-slide-down .35s ease both; }
+.kodi-ios-share { display: inline-flex; align-items: center; gap: .2rem; font-weight: 600; }
+.kodi-ios-share::before { content: "\2B06"; display: inline-grid; place-items: center; width: 1.2rem; height: 1.2rem;
+  border: 1.5px solid currentColor; border-radius: .3rem; font-size: .7rem; }
+
+.kodi-offline-note { font-size: .8rem; color: var(--kodi-warning); }
+.kodi-list { list-style: none; padding: 0; margin: 0; }
+.kodi-list li { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem 0;
+  border-bottom: 1px dashed var(--kodi-border); font-size: .9rem; }
+.kodi-list li:last-child { border-bottom: 0; }
+.kodi-amount { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.table-kodi { --bs-table-bg: transparent; font-size: .9rem; }
+.table-kodi thead th { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--kodi-muted); }
+
+.btn { border-radius: 12px; }
+.btn-primary { background: linear-gradient(180deg, var(--kodi-primary), var(--kodi-primary-deep)); border: 0; }
+.btn:active { transform: scale(.98); }
+
+.form-switch .form-check-input { width: 2.6em; height: 1.4em; }
+
+.kodi-offline-page { display: grid; place-items: center; min-height: 100vh; }
+
+@keyframes kodi-slide-down { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes kodi-pulse { 50% { opacity: .35; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
