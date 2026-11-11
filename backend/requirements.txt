@@ -1,0 +1,17 @@
+# Kodi Rental API (Phases 2-3) - tested on Python 3.15 / PostgreSQL 18
+fastapi==0.162.4
+uvicorn==0.54.0
+websockets==17.4
+asyncpg==0.32.0
+pydantic==2.14.3
+pydantic-settings==2.16.2
+PyJWT==2.15.1
+argon2-cffi==25.1.0
+cryptography==50.0.2
+httpx==0.28.1
+python-multipart==0.0.33
+fpdf2==2.9.0
+pywebpush==2.5.0
+
+# tests
+pytest==9.2.0
