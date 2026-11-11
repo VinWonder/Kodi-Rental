@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     # Must be a publicly reachable HTTPS origin in production: Safaricom posts
     # STK and C2B callbacks to {public_base_url}/hooks/{token}/...
     public_base_url: str = "http://localhost:8000"
-    frontend_base_url: str = "http://localhost:5500"
+    frontend_base_url: str = "http://localhost:8000"   # where the PWA is served (invite links)
     cors_origins: list[str] = ["http://localhost:5500", "http://127.0.0.1:5500"]
     trust_proxy_headers: bool = False  # True only behind nginx/Cloudflare that sets X-Forwarded-For
 

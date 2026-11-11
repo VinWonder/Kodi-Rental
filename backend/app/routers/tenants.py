@@ -245,7 +245,7 @@ async def invite_tenant(tenant_id: UUID, m: Staff, settings: SettingsDep):
                VALUES ($1, $2, $3, now() + make_interval(days => $4)) RETURNING expires_at""",
             tenant_id, token_hash, m.user.id, settings.invite_token_days)
         business = await conn.fetchval("SELECT business_name FROM accounts WHERE id = $1", m.account_id)
-    link = f"{settings.frontend_base_url.rstrip('/')}/invite.html#token={raw}"
+    link = f"{settings.frontend_base_url.rstrip('/')}/#/invite?token={raw}"
     return {
         "invite_url": link,
         "expires_at": expires_at,

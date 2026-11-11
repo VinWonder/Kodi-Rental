@@ -54,10 +54,12 @@ def test_push_config_subscription_delivery_and_cleanup(client, fake_push):
         """INSERT INTO notifications (user_id, type, title, body, data)
            VALUES ($1::uuid, 'payment_received', 'Payment received', 'KES 20,000 via M-Pesa', '{"invoice_id": "abc"}')
            RETURNING id""", user_id)
-    deadline = time.time() + 5
-    while time.time() < deadline and _sql("SELECT pushed_at FROM notifications WHERE id = $1", notification_id) is None:
-        time.sleep(0.1)
-    time.sleep(0.3)
+    # pushed_at is claimed just before sending, so wait for the push itself.
+    deadline = time.time() + 10
+    while time.time() < deadline and len(fake_push.sent) == before:
+        time.sleep(0.05)
+    time.sleep(0.3)  # a duplicate push would arrive in this window
+    assert _sql("SELECT pushed_at FROM notifications WHERE id = $1", notification_id) is not None
     pushed = fake_push.sent[before:]
     assert len(pushed) == 1
     payload = pushed[0]["payload"]
@@ -94,8 +96,14 @@ def test_pwa_static_hosting(client):
     # Every precached shell file must exist, or the service worker install fails.
     import re
     shell = re.search(r"const SHELL = \[(.*?)\];", sw.text, re.S).group(1)
-    for path in re.findall(r"'([^']+)'", shell):
+    precached = set(re.findall(r"'([^']+)'", shell))
+    for path in precached:
         assert client.get(path).status_code == 200, path
+    # ...and every app module must be precached, or that screen breaks offline.
+    from pathlib import Path
+    frontend = Path(__file__).resolve().parents[2] / "frontend"
+    modules = {"/" + p.relative_to(frontend).as_posix() for p in (frontend / "js").rglob("*.js")}
+    assert modules <= precached, f"Add to SHELL in sw.js: {sorted(modules - precached)}"
 
     # API routes still win over the static mount.
     assert client.get("/healthz").json() == {"status": "ok"}

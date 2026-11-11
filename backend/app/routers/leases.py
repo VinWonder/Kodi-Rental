@@ -24,9 +24,13 @@ LEASE_COLUMNS = """l.id, l.account_id, l.unit_id, u.unit_number, p.id AS propert
                    l.billing_day, l.payment_due_days, l.next_billing_date, l.late_fee_type, l.late_fee_value,
                    l.notice_period_days, l.terms_version, l.terms_sha256, l.lease_document_media_id,
                    l.signature_media_id, l.signed_at, l.activated_at, l.notice_given_at, l.terminated_at,
-                   l.termination_reason, l.created_at, l.updated_at"""
+                   l.termination_reason, l.created_at, l.updated_at,
+                   u.payment_code, ms.shortcode_type AS paybill_type, ms.business_shortcode AS paybill_number"""
+# Paybill/till number and the unit's account number let tenants pay from the
+# M-Pesa menu as well as via STK prompts (both are public payment details).
 LEASE_FROM = """leases l JOIN units u ON u.id = l.unit_id JOIN properties p ON p.id = u.property_id
-                JOIN tenants t ON t.id = l.tenant_id"""
+                JOIN tenants t ON t.id = l.tenant_id
+                LEFT JOIN account_mpesa_settings ms ON ms.account_id = l.account_id"""
 LeaseStatus = Literal["draft", "pending_signature", "active", "notice_given", "terminated", "expired"]
 
 
