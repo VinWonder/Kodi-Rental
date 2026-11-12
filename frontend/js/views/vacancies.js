@@ -13,16 +13,19 @@ export async function vacanciesView(_, query) {
   const mount = scopedMount();
   const list = await counties().catch(() => []);
   const main = mount(`${pageHeader('Houses to let', { subtitle: 'Vacant units listed by Kodi landlords. Updated live.', back: '#/' })}
-    <form class="kodi-card kodi-filters mb-3" id="vac-filters">
+    <form class="kodi-card kodi-filters kodi-collapsible mb-3" id="vac-filters" role="search">
       <div class="row g-2 align-items-end">
         <div class="col-12 col-md-4"><label class="form-label small fw-semibold" for="vq">Estate, landmark or building</label>
-          <input class="form-control" id="vq" name="q" value="${esc(query.q || '')}" placeholder="e.g. Roysambu, Kilimani"></div>
-        ${select('county_id', 'County', list.map((c) => [c.id, c.name]), { value: query.county_id || '', col: 'col-6 col-md-2', placeholder: 'All' })}
-        ${select('unit_type', 'Type', UNIT_TYPES, { value: query.unit_type || '', col: 'col-6 col-md-2', placeholder: 'Any' })}
-        <div class="col-6 col-md-2"><label class="form-label small fw-semibold" for="vmax">Max rent (KES)</label>
+          <div class="d-flex gap-2"><input class="form-control" id="vq" name="q" type="search" value="${esc(query.q || '')}" placeholder="e.g. Roysambu, Kilimani">
+          <button type="button" class="btn btn-light kodi-filter-toggle" data-toggle-filters aria-expanded="false" aria-controls="vac-more">${icon('layers', 18)}<span class="visually-hidden">More filters</span></button></div></div>
+        <div class="col-12 col-md-8 kodi-collapse-body" id="vac-more"><div class="row g-2">
+        ${select('county_id', 'County', list.map((c) => [c.id, c.name]), { value: query.county_id || '', col: 'col-6 col-md-3', placeholder: 'All' })}
+        ${select('unit_type', 'Type', UNIT_TYPES, { value: query.unit_type || '', col: 'col-6 col-md-3', placeholder: 'Any' })}
+        <div class="col-6 col-md-3"><label class="form-label small fw-semibold" for="vmax">Max rent (KES)</label>
           <input class="form-control" id="vmax" name="max_rent" type="number" min="0" step="500" value="${esc(query.max_rent || '')}"></div>
         ${select('sort', 'Sort', [['newest', 'Newest'], ['price_asc', 'Cheapest'], ['price_desc', 'Most expensive'], ['nearest', 'Nearest to me']],
-          { value: query.sort || 'newest', col: 'col-6 col-md-2', placeholder: null })}
+          { value: query.sort || 'newest', col: 'col-6 col-md-3', placeholder: null })}
+        </div></div>
       </div>
     </form>
     <div id="vac-results" class="kodi-grid kodi-grid-cards">${skeleton(3)}</div>`);
@@ -57,6 +60,11 @@ export async function vacanciesView(_, query) {
         : emptyState('search', 'No vacancies match', 'Try another estate, county or a higher budget.');
     } catch (err) { box.innerHTML = errorBox(err); }
   };
+  form.querySelector('[data-toggle-filters]').addEventListener('click', (e) => {
+    const open = form.classList.toggle('is-open');
+    e.currentTarget.setAttribute('aria-expanded', String(open));
+  });
+  if (query.county_id || query.unit_type || query.max_rent) form.classList.add('is-open');
   form.addEventListener('input', debounce(load, 400));
   form.addEventListener('submit', (e) => { e.preventDefault(); load(); });
   load();

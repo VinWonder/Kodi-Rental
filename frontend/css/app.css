@@ -499,3 +499,93 @@ a.kodi-alert:hover { filter: brightness(.98); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ------------------------------------------------------------------ UX & accessibility pass */
+/* Bootstrap's own dark mode (data-bs-theme, set by theme.js) styles every
+   component; these tokens make it match Kodi's palette. */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #0a1329;
+  --bs-body-color: #e8eefc;
+  --bs-body-color-rgb: 232, 238, 252;
+  --bs-secondary-color: #a6b3cf;
+  --bs-tertiary-bg: #0e1932;
+  --bs-border-color: rgba(140, 180, 255, 0.16);
+  --bs-emphasis-color: #ffffff;
+}
+.kodi-wordmark { color: var(--kodi-text); }
+
+/* Muted text meets 4.5:1 on every surface (Bootstrap's grey did not on sunken panels). */
+.text-secondary { color: var(--kodi-muted) !important; }
+:root { --kodi-muted: #556176; }
+
+/* Status badges: darker text in light mode for WCAG AA contrast. */
+.kodi-badge-success { color: #0f5132; }
+.kodi-badge-warning { color: #7a4a00; }
+.kodi-badge-danger { color: #a51d2d; }
+.kodi-badge-info { color: #055160; }
+.kodi-badge-primary { color: #0a4fb6; }
+.kodi-badge-secondary { color: #495057; }
+[data-bs-theme="dark"] .kodi-badge-success { color: #75e0b0; }
+[data-bs-theme="dark"] .kodi-badge-warning { color: #ffd27a; }
+[data-bs-theme="dark"] .kodi-badge-danger { color: #ff9b9b; }
+[data-bs-theme="dark"] .kodi-badge-info { color: #8be3f5; }
+[data-bs-theme="dark"] .kodi-badge-primary { color: #9ec5fe; }
+[data-bs-theme="dark"] .kodi-badge-secondary { color: #c3cbd9; }
+
+/* Button text that is hidden visually on phones but still read aloud. */
+@media (max-width: 767.98px) {
+  .kodi-label-md { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+}
+.kodi-inline-select label { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; display: block; }
+
+/* Visible keyboard focus everywhere. */
+:focus-visible { outline: 3px solid rgba(13, 110, 253, .55); outline-offset: 2px; border-radius: 6px; }
+.kodi-unit:focus-visible, .kodi-issue:focus-visible, a.kodi-card:focus-visible { outline-offset: 3px; }
+
+/* Touch targets: at least ~44px on touch screens (WCAG 2.5.5 / Apple & Google guidance). */
+@media (pointer: coarse) {
+  .btn-icon { width: 44px; height: 44px; }
+  .btn-sm:not(.btn-link) { min-height: 40px; padding-inline: .8rem; }
+  .kodi-filter { min-height: 40px; }
+  .form-check-input { width: 1.25em; height: 1.25em; }
+  .form-switch .form-check-input { width: 2.8em; height: 1.5em; }
+  .kodi-thumb-actions button { width: 36px; height: 36px; }
+  .dropdown-item { padding-block: .65rem; }
+}
+
+/* Horizontal chip rows hint that they scroll. */
+.kodi-chips { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); padding-right: 2rem; }
+
+/* Repair board: swipe one column at a time on phones. */
+@media (max-width: 767.98px) {
+  .kodi-board { grid-auto-columns: 84%; scroll-snap-type: x mandatory; scroll-padding-left: 2px; }
+  .kodi-board-col { scroll-snap-align: start; }
+}
+.kodi-gridline.dashed { stroke-dasharray: 3 4; opacity: .8; }
+
+/* Messages shortcut lives in the sidebar on desktop. */
+@media (min-width: 992px) { #chat-shortcut { display: none !important; } }
+#chat-shortcut .kodi-dot { top: 6px; right: 6px; }
+
+/* Quick "collect" action on unpaid invoice rows. */
+.kodi-rows .kodi-row-action { flex-shrink: 0; }
+.kodi-rows li { position: relative; display: flex; align-items: center; }
+.kodi-rows li > a, .kodi-rows li > .kodi-row-inner { flex: 1; min-width: 0; }
+.kodi-collect { position: relative; z-index: 1; }
+
+/* Collapsible filters (vacancy search on phones). */
+.kodi-filter-toggle { display: none; }
+@media (max-width: 767.98px) {
+  .kodi-filter-toggle { display: inline-flex; }
+  .kodi-collapsible:not(.is-open) .kodi-collapse-body { display: none; }
+}
+
+/* Contrast: white on M-Pesa green needs a deeper green; blue accents on dark surfaces need a lighter blue. */
+.kodi-mpesa-logo { background: #007a3d; }
+[data-bs-theme="dark"] .kodi-navlink.active, [data-bs-theme="dark"] .kodi-tab.active,
+[data-bs-theme="dark"] .kodi-tabs .nav-link.active, [data-bs-theme="dark"] .kodi-msg-author,
+[data-bs-theme="dark"] .kodi-quick a .kodi-icon, [data-bs-theme="dark"] .kodi-photo-add { color: #8bb9fe; }
+[data-bs-theme="dark"] .kodi-tabs .nav-link.active { border-bottom-color: #8bb9fe; }
+/* Bootstrap's yellow outline text is unreadable on white: use dark amber. */
+.btn-outline-warning { --bs-btn-color: #7a4a00; --bs-btn-border-color: #e0a800; --bs-btn-hover-color: #000; --bs-btn-active-color: #000; }
+[data-bs-theme="dark"] .btn-outline-warning { --bs-btn-color: #ffd27a; }

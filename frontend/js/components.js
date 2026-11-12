@@ -135,12 +135,26 @@ export function stat(labelText, value, { tone = '', hint = '', iconName = '' } =
   </section>`;
 }
 
+/** Turn API/network errors into plain language; never show raw validation text. */
+export function friendlyError(err) {
+  const status = err?.status;
+  if (err instanceof ApiError && err.offline) return ['Not available offline yet', 'Open this screen once while online and Kodi will keep a copy on this device.'];
+  if (status === 404 || status === 422 && /uuid|valid/i.test(err.message)) return ['We couldn’t find that', 'It may have been removed, or the link is incomplete. Go back and try again.'];
+  if (status === 403) return ['You don’t have access to this', 'Ask the account owner to give you the right role.'];
+  if (status === 401) return ['Please sign in again', 'Your session has ended.'];
+  if (status >= 500) return ['Something went wrong on our side', 'Please try again in a moment. Your data is safe.'];
+  return ['Could not load this', err?.message || 'Please try again.'];
+}
+
 export function errorBox(err) {
   const offline = err instanceof ApiError && err.offline;
-  return `<div class="kodi-card text-center py-4">
+  const [title, text] = friendlyError(err);
+  return `<div class="kodi-card text-center py-4" role="alert">
     <div class="kodi-empty-icon mx-auto mb-2">${icon(offline ? 'clock' : 'alert', 26)}</div>
-    <h2 class="h6 fw-bold mb-1">${offline ? 'Not available offline yet' : 'Could not load this'}</h2>
-    <p class="text-secondary small mb-0">${esc(offline ? 'Open this screen once while online and Kodi will keep a copy.' : err.message)}</p>
+    <h1 class="h6 fw-bold mb-1">${esc(title)}</h1>
+    <p class="text-secondary small mb-3">${esc(text)}</p>
+    <div class="d-flex gap-2 justify-content-center"><button class="btn btn-light btn-sm" type="button" data-back>Go back</button>
+      <button class="btn btn-primary btn-sm" type="button" data-retry>Try again</button></div>
   </div>`;
 }
 
@@ -162,10 +176,12 @@ function mountModal(html, size) {
 /** Show a modal; resolves when it closes. `onReady(el, close)` wires behaviour. */
 export function modal({ title, body, footer = '', size = '', onReady }) {
   return new Promise((resolve) => {
+    const titleId = `m-${Math.random().toString(36).slice(2, 8)}`;
     const { el, instance } = mountModal(`
-      <div class="modal-header border-0 pb-0"><h2 class="modal-title h5 fw-bold">${esc(title)}</h2>
+      <div class="modal-header border-0 pb-0"><h2 class="modal-title h5 fw-bold" id="${titleId}">${esc(title)}</h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
       <div class="modal-body">${body}</div>${footer ? `<div class="modal-footer border-0 pt-0">${footer}</div>` : ''}`, size);
+    el.setAttribute('aria-labelledby', titleId);
     let result;
     let shown = false;
     el.addEventListener('shown.bs.modal', () => { shown = true; }, { once: true });
@@ -360,8 +376,12 @@ export function barChart(labels, series, { height = 200 } = {}) {
   }).join('')).join('');
   const axis = labels.map((l, i) => `<text x="${i * w + w / 2}%" y="97%" text-anchor="middle" class="kodi-axis">${esc(l)}</text>`).join('');
   const legend = series.map((s) => `<span class="kodi-legend"><i style="background:${s.color}"></i>${esc(s.name)}</span>`).join('');
-  return `<div class="kodi-chart"><svg width="100%" height="${height}" role="img" aria-label="Chart">
-    <line x1="0" x2="100%" y1="88%" y2="88%" class="kodi-gridline"/>${bars}${axis}</svg><div class="kodi-legends">${legend}</div></div>`;
+  const short = (v) => (v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${Math.round(v / 1e3)}K` : String(Math.round(v)));
+  const grid = [0.5, 1].map((f) => `<line x1="0" x2="100%" y1="${88 - 82 * f}%" y2="${88 - 82 * f}%" class="kodi-gridline dashed"/>
+    <text x="0" y="${88 - 82 * f - 1.5}%" class="kodi-axis">${short(max * f)}</text>`).join('');
+  const summary = series.map((s) => `${s.name}: ${labels.map((l, i) => `${l} ${fmtMoney(s.values[i] || 0)}`).join(', ')}`).join('. ');
+  return `<div class="kodi-chart"><svg width="100%" height="${height}" role="img" aria-label="${esc(summary)}">
+    ${grid}<line x1="0" x2="100%" y1="88%" y2="88%" class="kodi-gridline"/>${bars}${axis}</svg><div class="kodi-legends">${legend}</div></div>`;
 }
 
 /** Donut chart. segments: [{ label, value, color }] */

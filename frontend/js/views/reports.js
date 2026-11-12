@@ -15,7 +15,7 @@ const TABS = [
   ['exports', 'Downloads', null],
 ];
 
-const table = (head, rows, foot = '') => `<div class="kodi-card p-0"><div class="table-responsive"><table class="table table-kodi table-hover align-middle mb-0">
+const table = (head, rows, foot = '') => `<div class="kodi-card p-0"><div class="table-responsive" tabindex="0" role="region" aria-label="Report table"><table class="table table-kodi table-hover align-middle mb-0">
   <thead><tr>${head.map((h) => `<th class="${h.endsWith('#') ? 'text-end' : ''}">${esc(h.replace('#', ''))}</th>`).join('')}</tr></thead>
   <tbody>${rows}</tbody>${foot ? `<tfoot>${foot}</tfoot>` : ''}</table></div></div>`;
 const r = (v) => `<td class="text-end kodi-amount">${esc(fmtMoney(v))}</td>`;
@@ -62,7 +62,7 @@ export async function reportsView(_, query) {
     async defaulters() {
       const rows = await api(acct('/reports/defaulters'));
       if (!rows.length) return emptyState('check', 'No tenants in arrears', 'Everyone has paid what is due.');
-      return table(['Tenant', 'Unit', 'Overdue#', 'Oldest due', 'Days#', 'Aging', ''], rows.map((x) => `<tr>
+      return table(['Tenant', 'Unit', 'Overdue#', 'Oldest due', 'Days#', 'Aging', 'Action'], rows.map((x) => `<tr>
         <td><a href="#/tenants/${x.tenant_id}"><strong>${esc(x.tenant_name)}</strong></a><div class="small text-secondary">+${esc(x.tenant_phone)}</div></td>
         <td>${esc(x.unit_number)}<div class="small text-secondary">${esc(x.property_name)}</div></td>${r(x.amount_overdue)}
         <td>${esc(fmtDate(x.oldest_due_date))}</td><td class="text-end">${esc(x.max_days_overdue)}</td>
@@ -101,7 +101,7 @@ export async function reportsView(_, query) {
       if (!rows.length) return emptyState('download', 'No downloads yet', 'Files you generate from the other tabs are kept here.');
       return table(['Requested', 'Report', 'Format', 'Status', ''], rows.map((x) => `<tr><td class="text-nowrap">${esc(fmtTime(x.requested_at))}</td>
         <td>${esc(label(x.report_type))}</td><td class="text-uppercase">${esc(x.format)}</td><td>${badge(x.status === 'ready' ? 'completed' : x.status)}</td>
-        <td class="text-end">${x.status === 'ready' ? `<button class="btn btn-sm btn-light" data-get="${x.id}" data-name="${esc(x.filename)}">${icon('download', 14)}</button>` : esc(x.error || '')}</td></tr>`).join(''));
+        <td class="text-end">${x.status === 'ready' ? `<button class="btn btn-sm btn-light" data-get="${x.id}" data-name="${esc(x.filename)}" aria-label="Download ${esc(x.filename)}">${icon('download', 14)}</button>` : esc(x.error || '')}</td></tr>`).join(''));
     },
   };
 

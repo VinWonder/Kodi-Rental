@@ -18,8 +18,8 @@ export async function dashboardView() {
   const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const main = mount(`${pageHeader(`${greet}, ${name}`, {
     subtitle: esc(state.membership?.business_name || ''),
-    actions: state.isStaff ? `<a class="btn btn-light" href="#/tenants?new=1">${icon('users', 18)}<span class="d-none d-md-inline"> Add tenant</span></a>
-      <a class="btn btn-primary" href="#/properties?new=1">${icon('plus', 18)}<span class="d-none d-md-inline"> Add property</span></a>` : '',
+    actions: state.isStaff ? `<a class="btn btn-light" href="#/tenants?new=1">${icon('users', 18)}<span class="kodi-label-md"> Add tenant</span></a>
+      <a class="btn btn-primary" href="#/properties?new=1">${icon('plus', 18)}<span class="kodi-label-md"> Add property</span></a>` : '',
   })}
     <div id="dash-body">${skeleton(4)}</div>`);
 
@@ -48,7 +48,9 @@ export async function dashboardView() {
           <span><strong>${d.unmatched_payments} M-Pesa payment(s)</strong> could not be matched to a tenant. Tap to assign them.</span></a>` : ''}
         <div class="kodi-grid kodi-grid-4 mb-3">
           ${stat('Collected this month', esc(fmtMoney(d.this_month.collected)), { tone: 'success', iconName: 'cash',
-            hint: `${collectionRate}% of ${esc(fmtMoney(d.this_month.invoiced))} billed` })}
+            hint: collectionRate > 100
+              ? `${esc(fmtMoney(d.this_month.invoiced))} billed · incl. arrears & deposits`
+              : `${collectionRate}% of ${esc(fmtMoney(d.this_month.invoiced))} billed this month` })}
           ${stat('Rent in arrears', esc(fmtMoney(d.arrears.amount_overdue)), { tone: Number(d.arrears.amount_overdue) ? 'danger' : '', iconName: 'alert',
             hint: `<a href="#/reports?tab=defaulters">${d.arrears.defaulters} tenant(s) overdue</a>` })}
           ${stat('Occupancy', `${esc(o.occupancy_rate_pct)}%`, { iconName: 'door', hint: `${o.occupied} of ${o.total_units} units occupied` })}

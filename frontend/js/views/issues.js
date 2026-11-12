@@ -46,10 +46,10 @@ export async function issuesBoardView(_, query) {
   const main = mount(`${pageHeader('Repairs', { subtitle: 'Tenant-reported issues, without a caretaker',
     actions: `<div class="btn-group" role="group"><button class="btn btn-light ${view === 'board' ? 'active' : ''}" data-view="board" aria-label="Board">${icon('grid', 18)}</button>
       <button class="btn btn-light ${view === 'list' ? 'active' : ''}" data-view="list" aria-label="List">${icon('list', 18)}</button></div>
-      ${state.isStaff ? `<button class="btn btn-primary" data-new>${icon('plus', 18)}<span class="d-none d-md-inline"> Log issue</span></button>` : ''}` })}
+      ${state.isStaff ? `<button class="btn btn-primary" data-new>${icon('plus', 18)}<span class="kodi-label-md"> Log issue</span></button>` : ''}` })}
     <div class="d-flex gap-2 mb-3 flex-wrap">
-      ${select('priority', '', ['emergency', 'high', 'medium', 'low'], { value: query.priority || '', col: 'kodi-inline-select', placeholder: 'Any priority' })}
-      ${select('category', '', ISSUE_CATEGORIES.map(([v, , t]) => [v, t]), { value: query.category || '', col: 'kodi-inline-select', placeholder: 'Any category' })}
+      ${select('priority', 'Priority', ['emergency', 'high', 'medium', 'low'], { value: query.priority || '', col: 'kodi-inline-select', placeholder: 'Any priority' })}
+      ${select('category', 'Category', ISSUE_CATEGORIES.map(([v, , t]) => [v, t]), { value: query.category || '', col: 'kodi-inline-select', placeholder: 'Any category' })}
       <div class="form-check form-switch align-self-center ms-1"><input class="form-check-input" type="checkbox" id="show-closed" ${query.closed ? 'checked' : ''}>
         <label class="form-check-label small" for="show-closed">Include closed</label></div>
     </div>
@@ -106,7 +106,7 @@ export async function issueDetailView({ id }) {
   let i;
   try { i = await api(acct(`/issues/${id}`)); } catch (err) { mount(errorBox(err)); return; }
   const main = mount(`${pageHeader(i.title, { back: '#/issues', subtitle: `${esc(i.ticket_number)} · ${esc(label(i.category))} · Unit ${esc(i.unit_number)}, ${esc(i.property_name)}`,
-    actions: i.tenant_id ? `<button class="btn btn-light" data-call="video" title="Video call the tenant">${icon('video', 18)}<span class="d-none d-md-inline"> See it live</span></button>` : '' })}
+    actions: i.tenant_id ? `<button class="btn btn-light" data-call="video" title="Video call the tenant">${icon('video', 18)}<span class="kodi-label-md"> See it live</span></button>` : '' })}
     <div class="row g-3">
       <div class="col-lg-7">
         <section class="kodi-card mb-3">
@@ -117,7 +117,7 @@ export async function issueDetailView({ id }) {
         </section>
         <section class="kodi-card"><h2 class="h6 fw-bold">Timeline</h2>${timeline(i.timeline)}
           ${state.isStaff ? `<form class="mt-3" data-comment><div class="input-group"><input class="form-control" name="comment" placeholder="Add a note or reply to the tenant…" required maxlength="2000">
-            <button class="btn btn-primary">${icon('send', 16)}</button></div>
+            <button class="btn btn-primary" aria-label="Send">${icon('send', 16)}</button></div>
             <div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_internal" id="internal"><label class="form-check-label small" for="internal">Internal note (hidden from tenant)</label></div></form>` : ''}
         </section>
       </div>
@@ -128,7 +128,7 @@ export async function issueDetailView({ id }) {
             ${select('priority', 'Priority', ['low', 'medium', 'high', 'emergency'], { value: i.priority, placeholder: null })}
             <div class="mb-3"><label class="form-label small fw-semibold" for="contractor">Contractor</label>
               <div class="input-group"><select class="form-select" name="assigned_contractor_id" id="contractor"><option value="">Not assigned</option></select>
-              <button type="button" class="btn btn-light" data-new-contractor title="New contractor">${icon('plus', 16)}</button></div></div>
+              <button type="button" class="btn btn-light" data-new-contractor title="New contractor" aria-label="New contractor">${icon('plus', 16)}</button></div></div>
             ${field('scheduled_for', 'Visit scheduled for', { type: 'datetime-local', value: i.scheduled_for ? new Date(i.scheduled_for).toISOString().slice(0, 16) : '' })}
             <div class="row g-2">${field('estimated_cost', 'Estimate (KES)', { type: 'number', value: i.estimated_cost ?? '', dataType: 'number', col: 'col-6', attrs: 'min="0"' })}
               ${field('actual_cost', 'Final cost (KES)', { type: 'number', value: i.actual_cost ?? '', dataType: 'number', col: 'col-6', attrs: 'min="0"' })}</div>
@@ -260,7 +260,7 @@ export async function myIssueDetailView({ id }) {
   const steps = ['received', 'under_review', 'dispatched_contractor', 'in_progress', 'resolved'];
   const at = steps.indexOf(i.status);
   const main = mount(`${pageHeader(i.title, { back: '#/issues', subtitle: `${esc(i.ticket_number)} · ${esc(label(i.category))}`,
-    actions: `<button class="btn btn-light" data-call="video">${icon('video', 18)}<span class="d-none d-md-inline"> Show landlord</span></button>` })}
+    actions: `<button class="btn btn-light" data-call="video">${icon('video', 18)}<span class="kodi-label-md"> Show landlord</span></button>` })}
     <section class="kodi-card mb-3"><ol class="kodi-stepper">${steps.map((s, idx) => `<li class="${idx <= at ? 'done' : ''} ${idx === at ? 'current' : ''}"><span></span>${esc(label(s))}</li>`).join('')}</ol>
       ${i.status === 'rejected' ? '<p class="small text-danger mb-0 mt-2">Your landlord closed this request. See the timeline for details.</p>' : ''}
       ${i.scheduled_for ? `<p class="small mt-2 mb-0">${icon('calendar', 14)} Visit scheduled: <strong>${esc(fmtTime(i.scheduled_for))}</strong></p>` : ''}
@@ -269,7 +269,7 @@ export async function myIssueDetailView({ id }) {
       <div class="col-lg-7"><section class="kodi-card mb-3"><p>${esc(i.description)}</p>${attachments(i.attachments)}</section>
         <section class="kodi-card"><h2 class="h6 fw-bold">Updates</h2>${timeline(i.timeline)}
           <form class="mt-3" data-comment><div class="input-group"><input class="form-control" name="comment" placeholder="Add a message…" required maxlength="2000">
-          <button class="btn btn-primary">${icon('send', 16)}</button></div></form></section></div>
+          <button class="btn btn-primary" aria-label="Send">${icon('send', 16)}</button></div></form></section></div>
       <div class="col-lg-5">${done && !i.tenant_rating ? `<section class="kodi-card"><h2 class="h6 fw-bold">How did it go?</h2>
           <form data-rate><div class="kodi-rate mb-2">${[5, 4, 3, 2, 1].map((n) => `<input type="radio" name="rating" id="r${n}" value="${n}" required><label for="r${n}" title="${n} stars">★</label>`).join('')}</div>
           <textarea class="form-control mb-2" name="feedback" rows="2" placeholder="Optional feedback"></textarea><button class="btn btn-primary w-100">Rate the fix</button></form></section>`

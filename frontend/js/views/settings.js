@@ -133,7 +133,7 @@ async function mpesaPanel(box) {
       <h2 class="h6 fw-bold">Callback URLs</h2>
       ${s.configured ? `<p class="small text-secondary">Safaricom sends payment confirmations here. Each URL has a secret token unique to your business.</p>
         ${['stk_callback_url', 'c2b_confirmation_url', 'c2b_validation_url'].filter((k) => s[k]).map((k) => `<label class="small fw-semibold">${esc(label(k.replace('_url', '')))}</label>
-          <div class="input-group input-group-sm mb-2"><input class="form-control" readonly value="${esc(s[k])}"><button class="btn btn-light" data-copy="${esc(s[k])}">${icon('copy', 14)}</button></div>`).join('')}
+          <div class="input-group input-group-sm mb-2"><input class="form-control" readonly value="${esc(s[k])}" aria-label="${esc(label(k.replace('_url', '')))} URL"><button class="btn btn-light" data-copy="${esc(s[k])}" aria-label="Copy URL">${icon('copy', 14)}</button></div>`).join('')}
         ${String(s.stk_callback_url || '').startsWith('https://') ? '' : '<div class="alert alert-warning small">Safaricom needs a public <strong>https</strong> address. In development, run a tunnel (cloudflared/ngrok) and set KODI_PUBLIC_BASE_URL.</div>'}
         <button class="btn btn-success w-100" data-register ${state.isOwner ? '' : 'disabled'}>${icon('check', 16)} Register Paybill URLs with Safaricom</button>
         <p class="small text-secondary mt-2 mb-0">Do this once so payments made from the M-Pesa menu (not just prompts) reach Kodi.</p>`
@@ -194,7 +194,7 @@ async function contractorsPanel(box) {
       ${state.isStaff ? `<button class="btn btn-primary btn-sm" data-add>${icon('plus', 14)} Add contractor</button>` : ''}</div>
     ${list.length ? `<ul class="kodi-list">${list.map((c) => `<li><span><strong class="d-block">${esc(c.name)}${c.company_name ? ` · ${esc(c.company_name)}` : ''}</strong>
       <span class="small text-secondary">${(c.specialties || []).map((s) => esc(label(s))).join(', ') || 'General'} · <a href="tel:+${esc(c.phone)}">+${esc(c.phone)}</a></span></span>
-      <span class="d-flex gap-1 align-items-center">${c.is_active ? '' : badge('inactive')}${state.isStaff ? `<button class="btn btn-sm btn-light" data-edit="${c.id}">${icon('pen', 14)}</button>` : ''}</span></li>`).join('')}</ul>`
+      <span class="d-flex gap-1 align-items-center">${c.is_active ? '' : badge('inactive')}${state.isStaff ? `<button class="btn btn-sm btn-light" data-edit="${c.id}" aria-label="Edit ${esc(c.name)}">${icon('pen', 14)}</button>` : ''}</span></li>`).join('')}</ul>`
       : emptyState('wrench', 'No contractors yet', 'Save your plumber, electrician and other fundis to dispatch them from repair tickets.')}</section>`;
   box.onclick = async (e) => {
     if (e.target.closest('[data-add]')) { if (await contractorModal()) contractorsPanel(box); }

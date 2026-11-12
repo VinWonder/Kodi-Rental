@@ -105,12 +105,12 @@ export async function chatView(params) {
   thread.innerHTML = `<header class="kodi-thread-head">
       <a class="btn btn-icon btn-light d-lg-none" href="#/chat" aria-label="Back">${icon('back')}</a>
       <span class="kodi-avatar">${esc(convTitle(conv)[0])}</span>
-      <div class="flex-grow-1 min-w-0"><strong class="d-block text-truncate">${esc(convTitle(conv))}</strong>
+      <div class="flex-grow-1 min-w-0"><h1 class="h6 fw-bold mb-0 text-truncate">${esc(convTitle(conv))}</h1>
         <span class="small text-secondary" data-typing>${esc(conv.unit_label || '')}</span></div>
       <button class="btn btn-icon btn-light" data-call="audio" aria-label="Voice call">${icon('phone')}</button>
       <button class="btn btn-icon btn-primary" data-call="video" aria-label="Video call">${icon('video')}</button>
     </header>
-    <div class="kodi-messages" id="messages"><div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div></div>
+    <div class="kodi-messages" id="messages" tabindex="0" role="log" aria-live="polite" aria-label="Messages"><div class="text-center py-3"><span class="spinner-border spinner-border-sm"></span></div></div>
     <form class="kodi-composer" id="composer" autocomplete="off">
       <label class="btn btn-icon btn-light mb-0" aria-label="Attach">${icon('clip')}<input type="file" class="visually-hidden" accept="image/*,video/*,application/pdf" data-attach></label>
       <textarea class="form-control" rows="1" name="body" placeholder="Message" maxlength="4000" aria-label="Message"></textarea>

@@ -92,6 +92,10 @@ document.addEventListener('click', async (event) => {
     } catch (err) { toast(err.message, { variant: 'danger' }); } finally { setBusy(dl, false); }
   }
 
+  // Error cards: "Go back" / "Try again".
+  if (event.target.closest('[data-back]')) window.history.back();
+  if (event.target.closest('[data-retry]')) resolve();
+
   // Landlord <-> tenant view.
   if (event.target.closest('[data-switch-mode]')) {
     state.mode = state.mode === 'landlord' ? 'tenant' : 'landlord';

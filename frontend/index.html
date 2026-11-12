@@ -22,6 +22,7 @@
   <link rel="icon" href="/icons/favicon.ico" sizes="any">
   <link rel="icon" href="/icons/favicon-32.png" type="image/png">
 
+  <script src="/js/theme.js"></script>
   <link rel="stylesheet" href="/vendor/bootstrap/bootstrap.min.css">
   <link rel="stylesheet" href="/css/app.css">
   <script src="/vendor/bootstrap/bootstrap.bundle.min.js" defer></script>
@@ -34,10 +35,14 @@
     <nav class="kodi-topbar-inner d-flex align-items-center gap-2 py-2">
       <a class="d-flex align-items-center gap-2 text-decoration-none flex-shrink-0" href="#/" aria-label="Kodi home">
         <img src="/icons/icon-192.png" alt="" width="32" height="32" class="rounded-3">
-        <span class="fw-bold text-body d-none d-sm-inline">Kodi</span>
+        <span class="fw-bold kodi-wordmark d-none d-sm-inline">Kodi</span>
       </a>
       <div id="account-switch" class="kodi-account flex-grow-1 min-w-0"></div>
       <span id="net-status" class="kodi-pill" role="status" aria-live="polite">Online</span>
+      <a id="chat-shortcut" class="btn btn-icon btn-light position-relative d-none" href="#/chat" aria-label="Messages">
+        <svg class="kodi-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L3 21l1.9-6.4A8 8 0 1121 12z"/></svg>
+        <span class="kodi-dot d-none" data-unread-chat></span>
+      </a>
       <div id="bell" class="dropdown d-none">
         <button class="btn btn-icon btn-light position-relative" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications" id="bell-button">
           <svg class="kodi-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg>

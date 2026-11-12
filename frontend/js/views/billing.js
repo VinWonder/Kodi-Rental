@@ -137,7 +137,7 @@ export async function billingView(_, query) {
   const mount = scopedMount();
   const tab = query.tab || 'invoices';
   const main = mount(`${pageHeader('Billing', { subtitle: 'Invoices are generated automatically every cycle',
-    actions: state.canFinance ? `<div class="dropdown"><button class="btn btn-light" data-bs-toggle="dropdown">${icon('more')}</button><ul class="dropdown-menu dropdown-menu-end">
+    actions: state.canFinance ? `<div class="dropdown"><button class="btn btn-light" data-bs-toggle="dropdown" aria-label="More billing actions">${icon('more')}</button><ul class="dropdown-menu dropdown-menu-end">
         <li><button class="dropdown-item" data-new-invoice>${icon('receipt', 16)} New invoice</button></li>
         <li><a class="dropdown-item" href="#/leases">${icon('key', 16)} Leases</a></li>
         ${state.isOwner ? `<li><button class="dropdown-item" data-run-billing>${icon('bolt', 16)} Run billing now</button></li>` : ''}</ul></div>
@@ -163,11 +163,19 @@ export async function billingView(_, query) {
               <span class="kodi-avatar">${esc(i.tenant_name[0])}</span>
               <span class="flex-grow-1 min-w-0"><strong class="d-block text-truncate">${esc(i.tenant_name)}</strong>
                 <span class="small text-secondary">${esc(i.invoice_number)} · ${esc(i.unit_number)} · due ${esc(fmtDate(i.due_date))}</span></span>
-              <span class="text-end"><span class="d-block fw-semibold">${esc(fmtMoney(Number(i.balance) ? i.balance : i.total_amount))}</span>${badge(i.status)}</span></a></li>`).join('')}</ul></div>`
+              <span class="text-end"><span class="d-block fw-semibold">${esc(fmtMoney(Number(i.balance) ? i.balance : i.total_amount))}</span>${badge(i.status)}</span></a>
+              ${state.canFinance && Number(i.balance) > 0 ? `<button class="btn btn-success btn-sm kodi-collect me-3" data-collect="${i.id}"
+                aria-label="Send M-Pesa prompt to ${esc(i.tenant_name)}">${icon('phone', 14)}<span class="kodi-label-md"> Collect</span></button>` : ''}</li>`).join('')}</ul></div>`
             : emptyState('receipt', filter === 'open' ? 'Everyone is paid up' : 'No invoices', 'Invoices appear here on each tenant\'s billing date.');
         } catch (err) { box.innerHTML = errorBox(err); }
       };
-      body.addEventListener('click', (e) => {
+      body.addEventListener('click', async (e) => {
+        const collect = e.target.closest('[data-collect]');
+        if (collect) {
+          const inv = await api(acct(`/invoices/${collect.dataset.collect}`)).catch((err) => { toast(err.message, { variant: 'danger' }); return null; });
+          if (inv) { await stkPushFlow(inv); load(); }
+          return;
+        }
         const chip = e.target.closest('[data-filter]');
         if (!chip) return;
         filter = chip.dataset.filter;
@@ -260,7 +268,7 @@ export async function invoiceDetailView({ id }) {
   const open = ['issued', 'partially_paid', 'overdue'].includes(inv.status);
   const pct = Number(inv.total_amount) ? Math.min(100, Math.round((100 * inv.amount_paid) / inv.total_amount)) : 0;
   const main = mount(`${pageHeader(`Invoice ${inv.invoice_number}`, { back: '#/invoices', subtitle: `${esc(inv.tenant_name)} · Unit ${esc(inv.unit_number)}, ${esc(inv.property_name)}`,
-    actions: state.canFinance && open ? `<button class="btn btn-light" data-record>${icon('cash', 18)}<span class="d-none d-md-inline"> Record payment</span></button>
+    actions: state.canFinance && open ? `<button class="btn btn-light" data-record>${icon('cash', 18)}<span class="kodi-label-md"> Record payment</span></button>
       <button class="btn btn-success" data-stk>${icon('phone', 18)} Send M-Pesa prompt</button>` : '' })}
     <div class="row g-3">
       <div class="col-lg-5">

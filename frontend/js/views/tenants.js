@@ -2,7 +2,7 @@
 // statements, verification and allocation.
 import { api, download } from '../api.js';
 import {
-  badge, confirmDialog, copyText, emptyState, errorBox, field, formModal, icon, modal, pageHeader, photoPicker, select,
+  badge, confirmDialog, copyText, emptyState, errorBox, field, formModal, icon, label, modal, pageHeader, photoPicker, select,
   skeleton, uploadFile, wirePhotoPicker,
 } from '../components.js';
 import { navigate, setQuery } from '../router.js';
@@ -125,7 +125,7 @@ export async function tenantDetailView({ id }, query) {
   const current = t.leases.find((l) => ['pending_signature', 'active', 'notice_given'].includes(l.status));
   const main = mount(`${pageHeader(t.full_name, { back: '#/tenants',
     subtitle: `${t.identity_verified_at ? `${icon('shield', 14)} ID verified · ` : ''}${current ? `Unit ${esc(current.unit_number)}, ${esc(current.property_name)}` : 'No current unit'}`,
-    actions: state.isStaff ? `${!t.user_id ? `<button class="btn btn-light" data-invite>${icon('share', 18)}<span class="d-none d-md-inline"> Invite to app</span></button>` : ''}
+    actions: state.isStaff ? `${!t.user_id ? `<button class="btn btn-light" data-invite>${icon('share', 18)}<span class="kodi-label-md"> Invite to app</span></button>` : ''}
       ${!current ? `<button class="btn btn-primary" data-allocate>${icon('key', 18)} Allocate unit</button>` : ''}
       <div class="dropdown"><button class="btn btn-light" data-bs-toggle="dropdown" aria-label="More">${icon('more')}</button><ul class="dropdown-menu dropdown-menu-end">
         <li><button class="dropdown-item" data-edit>${icon('pen', 16)} Edit details</button></li>
@@ -144,7 +144,7 @@ export async function tenantDetailView({ id }, query) {
           </div>
           <ul class="kodi-list small">
             <li><span>Phone</span><a href="tel:+${esc(t.phone)}">+${esc(t.phone)}</a></li>
-            <li><span>${esc(t.id_document_type.replace('_', ' '))}</span><span>${esc(t.id_document_number)}</span></li>
+            <li><span>${esc(label(t.id_document_type))}</span><span>${esc(t.id_document_number)}</span></li>
             ${t.email ? `<li><span>Email</span><span class="text-truncate">${esc(t.email)}</span></li>` : ''}
             ${t.occupation ? `<li><span>Occupation</span><span>${esc(t.occupation)}${t.employer ? `, ${esc(t.employer)}` : ''}</span></li>` : ''}
             <li><span>App</span><span>${t.user_id ? 'Using Kodi' : 'Not invited yet'}</span></li>
@@ -155,7 +155,7 @@ export async function tenantDetailView({ id }, query) {
         </section>
         <section class="kodi-card">
           <div class="d-flex justify-content-between align-items-center mb-2"><h2 class="h6 fw-bold mb-0">Next of kin</h2>
-            ${state.isStaff ? `<button class="btn btn-light btn-sm" data-add-kin>${icon('plus', 14)}</button>` : ''}</div>
+            ${state.isStaff ? `<button class="btn btn-light btn-sm" data-add-kin aria-label="Add next of kin">${icon('plus', 14)}</button>` : ''}</div>
           ${t.next_of_kin.length ? `<ul class="kodi-list small">${t.next_of_kin.map((k) => `<li><span><strong class="d-block">${esc(k.full_name)}${k.is_primary ? ' ★' : ''}</strong>
             <span class="text-secondary">${esc(k.relationship)} · <a href="tel:+${esc(k.phone)}">+${esc(k.phone)}</a></span></span>
             ${state.isStaff ? `<button class="btn btn-sm btn-link text-danger" data-del-kin="${k.id}" aria-label="Remove">${icon('trash', 14)}</button>` : ''}</li>`).join('')}</ul>`

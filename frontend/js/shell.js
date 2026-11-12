@@ -57,7 +57,7 @@ const LANDLORD_NAV = [
   ['/tenants', 'users', 'Tenants', 'Tenants'],
   ['/invoices', 'receipt', 'Billing', 'Billing'],
   ['/issues', 'wrench', 'Repairs', 'Repairs'],
-  ['/chat', 'chat', 'Messages', 'Chat'],
+  ['/chat', 'chat', 'Messages', null],      // phones: top-bar shortcut keeps the tab bar at 5
   ['/reports', 'chart', 'Reports', null],
   ['/settings', 'settings', 'Settings', null],
 ];
@@ -98,6 +98,8 @@ export function renderChrome() {
   const userMenu = document.getElementById('user-menu');
   const bell = document.getElementById('bell');
   [userMenu, bell].forEach((el) => el.classList.toggle('d-none', !signedIn));
+  // Landlords reach Messages from the top bar on phones (tenants have a Chat tab).
+  document.getElementById('chat-shortcut').classList.toggle('d-none', !signedIn || state.mode !== 'landlord');
   if (!signedIn) {
     side.innerHTML = '';
     bottom.innerHTML = '';

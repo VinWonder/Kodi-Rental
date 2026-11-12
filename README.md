@@ -115,6 +115,19 @@ See [backend/README.md](backend/README.md) for M-Pesa setup and the statement/re
 
 There is also a public vacancy search at `#/vacancies` that needs no sign-in.
 
+## Design & accessibility
+
+- **Look:** glass and soft (neumorphic) surfaces on a calm blue/green palette, with light and dark themes that follow the device setting. Dark mode uses Bootstrap's own colour mode, so every component is themed.
+- **Phones first:** a five-tab bottom bar with Messages in the top bar, 44px touch targets, safe-area insets, swipeable board columns and collapsible filters. Desktops get a sidebar.
+- **Accessibility:** checked with axe-core (WCAG 2.1 AA plus best practice) on about 55 screens across light/dark and phone/desktop, with no violations. That covers:
+  - colour contrast
+  - names for every control
+  - labelled dialogs and live regions
+  - keyboard-reachable scroll areas
+  - visible focus
+  - reduced-motion support
+- **Errors:** messages are written in plain language, with "Go back" and "Try again" buttons, and never show raw validation text.
+
 ## PWA behaviour
 
 - **Install:** Chrome/Edge on Android and desktop show Kodi's own install banner.

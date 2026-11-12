@@ -93,7 +93,7 @@ export async function propertiesView(_, query) {
               <p class="small text-secondary mb-0">${icon('map', 14)} ${esc(p.area)}, ${esc(p.county_name)}</p></div>
             <span class="kodi-chip">${esc(label(p.property_type))}</span>
           </div>
-          <div class="kodi-progress my-3" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+          <div class="kodi-progress my-3" role="progressbar" aria-label="Occupancy" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
             <span style="width:${pct}%"></span></div>
           <div class="d-flex justify-content-between small">
             <span><strong>${p.occupied || 0}</strong>/${p.total_units || 0} occupied</span>
@@ -203,7 +203,7 @@ export async function propertyDetailView({ id }, query) {
       <section class="kodi-card kodi-mini"><span class="small text-secondary">Vacant</span><strong class="text-success">${property.vacant || 0}</strong></section>
       <section class="kodi-card kodi-mini"><span class="small text-secondary">Rent roll</span><strong>${esc(fmtMoney(property.actual_rent_roll || 0))}</strong></section>
     </div>
-    <div class="kodi-chips mb-3" role="tablist">${STATUS_FILTERS.map((s) => `<button class="kodi-filter ${s === (query.status || 'all') ? 'active' : ''}" data-status="${s}">${esc(s === 'all' ? 'All' : label(s))}</button>`).join('')}</div>
+    <div class="kodi-chips mb-3" role="group" aria-label="Filter units by state">${STATUS_FILTERS.map((s) => `<button class="kodi-filter ${s === (query.status || 'all') ? 'active' : ''}" aria-pressed="${s === (query.status || 'all')}" data-status="${s}">${esc(s === 'all' ? 'All' : label(s))}</button>`).join('')}</div>
     <div id="units" class="kodi-unit-grid">${skeleton(2)}</div>`);
 
   let filter = query.status || 'all';
@@ -228,7 +228,7 @@ export async function propertyDetailView({ id }, query) {
     const chip = e.target.closest('[data-status]');
     if (chip) {
       filter = chip.dataset.status;
-      main.querySelectorAll('[data-status]').forEach((c) => c.classList.toggle('active', c === chip));
+      main.querySelectorAll('[data-status]').forEach((c) => { c.classList.toggle('active', c === chip); c.setAttribute('aria-pressed', String(c === chip)); });
       setQuery({ status: filter === 'all' ? '' : filter });
       load();
     }
@@ -257,7 +257,7 @@ export async function unitDetailView({ id }) {
   const main = mount(`${pageHeader(`Unit ${unit.unit_number}`, {
     back: `#/properties/${unit.property_id}`,
     subtitle: `${esc(unit.property_name)} · ${esc(label(unit.unit_type))}`,
-    actions: state.isStaff ? `<button class="btn btn-light" data-edit>${icon('pen', 18)}<span class="d-none d-md-inline"> Edit</span></button>
+    actions: state.isStaff ? `<button class="btn btn-light" data-edit>${icon('pen', 18)}<span class="kodi-label-md"> Edit</span></button>
       ${unit.status === 'vacant' ? `<button class="btn btn-primary" data-allocate>${icon('key', 18)} Allocate tenant</button>` : ''}` : '',
   })}
     <div class="row g-3">
@@ -299,8 +299,8 @@ export async function unitDetailView({ id }) {
           <div class="kodi-thumbs" id="gallery">${unit.gallery.length ? unit.gallery.map((g) => `
             <figure class="kodi-thumb ${g.is_cover ? 'is-cover' : ''}"><img data-media="${g.media_id}" alt="">
               ${g.is_cover ? '<span class="kodi-thumb-tag">Cover</span>' : ''}
-              ${state.isStaff ? `<div class="kodi-thumb-actions">${g.is_cover ? '' : `<button data-cover="${g.media_id}" title="Make cover">${icon('star', 14)}</button>`}
-                <button data-remove-photo="${g.media_id}" title="Remove">${icon('trash', 14)}</button></div>` : ''}</figure>`).join('')
+              ${state.isStaff ? `<div class="kodi-thumb-actions">${g.is_cover ? '' : `<button data-cover="${g.media_id}" title="Make cover" aria-label="Make cover photo">${icon('star', 14)}</button>`}
+                <button data-remove-photo="${g.media_id}" title="Remove" aria-label="Remove photo">${icon('trash', 14)}</button></div>` : ''}</figure>`).join('')
             : '<p class="small text-secondary mb-0">No photos yet. Vacant units with photos get more enquiries.</p>'}</div>
         </section>
         <section class="kodi-card mb-3">
