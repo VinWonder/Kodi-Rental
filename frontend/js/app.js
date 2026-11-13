@@ -9,8 +9,10 @@ import { fallback, navigate, onBeforeRoute, parseHash, resolve, route, setGuard,
 import { bumpUnread, loadBellMenu, mount, newScope, refreshUnread, renderChrome } from './shell.js';
 import { state } from './state.js';
 import { setupTilt } from './tilt.js';
+import { beginPageTransition } from './fx.js';
+import { setupPalette } from './palette.js';
 import { setBusy, toast } from './ui.js';
-import { inviteView, loginView, onboardingView, registerView } from './views/auth.js';
+import { inviteView, loginView, onboardingView, registerView, welcomeView } from './views/auth.js';
 import { billingView, invoiceDetailView, myInvoicesView, myPaymentsView, myStatementView } from './views/billing.js';
 import { chatView, refreshChatBadge } from './views/chat.js';
 import { dashboardView } from './views/dashboard.js';
@@ -32,6 +34,7 @@ const noAccount = () => {
     '<a class="btn btn-primary" href="#/onboarding">Set up my business</a>')}</div>`);
 };
 
+route('/welcome', welcomeView, { public: true, guestOnly: true });
 route('/login', loginView, { public: true, guestOnly: true });
 route('/register', registerView, { public: true, guestOnly: true });
 route('/invite', inviteView, { public: true });
@@ -65,15 +68,20 @@ route('/notifications', notificationsView);
 route('/units', () => navigate('/properties', { replace: true }));
 fallback(() => mount(`<div class="kodi-card mt-4">${emptyState('search', 'Page not found', 'That link does not exist.', '<a class="btn btn-primary" href="#/">Go home</a>')}</div>`));
 
-onBeforeRoute(() => {
+let lastPath = null;
+onBeforeRoute(async (path) => {
+  newScope();
+  // Animate between screens (View Transitions API), not within one screen.
+  const changed = lastPath !== null && path !== lastPath;
+  lastPath = path;
+  if (changed) await beginPageTransition();
   document.body.classList.remove('is-welcome');
-  return newScope();
 });
 
 setGuard((r, path) => {
   const signedIn = session.isSignedIn && state.profile;
   if (!r.public && !signedIn) {
-    navigate(`/login${path !== '/' ? `?next=${encodeURIComponent(path)}` : ''}`, { replace: true });
+    navigate(path === '/' ? '/welcome' : `/login?next=${encodeURIComponent(path)}`, { replace: true });
     return false;
   }
   if (r.guestOnly && signedIn) { navigate('/', { replace: true }); return false; }
@@ -183,6 +191,7 @@ setupConnectivity();
 setupInstallBanners();
 setupCalls();
 setupTilt();
+setupPalette();
 renderChrome();
 registerServiceWorker();
 startRouter().finally(() => document.getElementById('boot')?.remove());

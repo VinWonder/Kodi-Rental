@@ -5,6 +5,7 @@ import { live, scopedMount, setUnread } from '../shell.js';
 import { state } from '../state.js';
 import { esc, fmtDate, fmtMoney, timeAgo } from '../ui.js';
 import { stkPushFlow } from './billing.js';
+import { countUp } from '../fx.js';
 
 export async function tenantHomeView() {
   const mount = scopedMount();
@@ -18,8 +19,8 @@ export async function tenantHomeView() {
     <div class="kodi-tenant-top">
       <div class="kodi-rentcard-wrap">
         <section class="kodi-rentcard" data-tilt="9" aria-label="Rent balance">
-          <div class="kodi-rentcard-top"><span class="kodi-rentcard-chip" aria-hidden="true"></span>
-            <span class="text-truncate">${esc(t?.business_name || 'Kodi')}</span></div>
+          <div class="kodi-rentcard-top"><span class="d-flex align-items-center gap-2 min-w-0"><span class="kodi-rentcard-chip" aria-hidden="true"></span>
+            <span class="text-truncate">${esc(t?.business_name || 'Kodi')}</span></span><span id="due-ring"></span></div>
           <div class="kodi-rentcard-balance" id="balance"><span>Balance</span><strong><span class="placeholder col-6"></span></strong></div>
           <div class="kodi-rentcard-foot"><span><span class="d-block">Home</span><strong>${t?.unit_number ? `Unit ${esc(t.unit_number)}` : '-'}</strong></span>
             <span id="balance-action"></span></div>
@@ -52,7 +53,20 @@ export async function tenantHomeView() {
       const open = invoices.filter((i) => ['issued', 'partially_paid', 'overdue'].includes(i.status));
       const balance = statement.length ? Number(statement.at(-1).running_balance) : open.reduce((a, i) => a + Number(i.balance), 0);
       main.querySelector('#balance').innerHTML = `<span>${balance > 0 ? 'Balance due' : balance < 0 ? 'Credit on your account' : 'All paid up'}${invoicesRes.offline ? ' · saved copy' : ''}</span>
-        <strong>${esc(fmtMoney(Math.abs(balance)))}</strong>`;
+        <strong data-count="${Math.abs(balance)}" data-format="money">${esc(fmtMoney(Math.abs(balance)))}</strong>`;
+      countUp(main.querySelector('#balance'));
+      const next = open.map((i) => i.due_date).sort()[0];
+      const ring = main.querySelector('#due-ring');
+      if (next) {
+        const days = Math.round((new Date(`${next}T00:00:00`) - new Date(new Date().toDateString())) / 864e5);
+        const frac = Math.max(0, Math.min(1, days / 30));
+        const text = days > 1 ? `${days} days` : days === 1 ? '1 day' : days === 0 ? 'Today' : `${-days}d late`;
+        ring.innerHTML = `<span class="kodi-due-ring ${days < 0 ? 'is-late' : days <= 3 ? 'is-soon' : ''}" role="img"
+            aria-label="${days < 0 ? `Rent is ${-days} days overdue` : days === 0 ? 'Rent is due today' : `Rent due in ${days} days`}">
+          <svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.5" class="bg"/>
+            <circle cx="18" cy="18" r="15.5" class="fg" pathLength="100" style="stroke-dasharray:${days < 0 ? 100 : Math.max(4, frac * 100)} 100"/></svg>
+          <span><b>${esc(text)}</b>${days >= 0 && days !== 0 ? '<i>to due</i>' : ''}</span></span>`;
+      } else ring.innerHTML = '';
       main.querySelector('#balance-action').innerHTML = balance > 0 && !invoicesRes.offline
         ? `<a class="btn btn-white btn-sm" href="#/invoices">${icon('phone', 16)} Pay now</a>`
         : balance <= 0 ? `<span class="d-inline-flex align-items-center gap-1">${icon('check', 16)} Up to date</span>` : '';

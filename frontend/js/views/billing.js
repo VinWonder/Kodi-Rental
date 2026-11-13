@@ -9,6 +9,7 @@ import { live, scopedMount } from '../shell.js';
 import { acct, qs, state } from '../state.js';
 import { esc, fmtDate, fmtMoney, fmtTime, timeAgo, toast } from '../ui.js';
 import { statementTable } from './tenants.js';
+import { celebrate } from '../fx.js';
 
 const INVOICE_FILTERS = ['open', 'overdue', 'partially_paid', 'paid', 'all'];
 const ITEM_TYPES = ['rent', 'water', 'electricity', 'garbage', 'service_charge', 'deposit', 'late_fee', 'other'];
@@ -55,7 +56,7 @@ export async function stkPushFlow(invoice, { tenantSelf = false } = {}) {
           <p class="mt-3 mb-1 fw-semibold">${ok ? 'Payment received' : 'Payment not completed'}</p>
           <p class="small text-secondary mb-0">${ok ? `M-Pesa code <strong>${esc(s.mpesa_receipt_number || '')}</strong>. A receipt has been issued.`
             : esc(s.result_desc || label(s.status))}</p>`;
-        if (ok) toast('Payment received. Receipt issued.', { variant: 'success' });
+        if (ok) { toast('Payment received. Receipt issued.', { variant: 'success' }); celebrate(); }
       };
       const check = async () => {
         try {

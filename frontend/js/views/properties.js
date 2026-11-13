@@ -9,6 +9,7 @@ import { live, scopedMount } from '../shell.js';
 import { acct, state } from '../state.js';
 import { esc, fmtDate, fmtMoney, setBusy, timeAgo, toast } from '../ui.js';
 import { allocateModal } from './leases.js';
+import { filterTwin, twinHtml, wireTwin } from '../twin.js';
 
 const STATUS_FILTERS = ['all', 'vacant', 'occupied', 'reserved', 'under_maintenance', 'cleaning'];
 const MANUAL = ['vacant', 'under_maintenance', 'cleaning', 'inactive'];
@@ -204,25 +205,52 @@ export async function propertyDetailView({ id }, query) {
       <section class="kodi-card kodi-mini"><span class="small text-secondary">Vacant</span><strong class="text-success">${property.vacant || 0}</strong></section>
       <section class="kodi-card kodi-mini"><span class="small text-secondary">Rent roll</span><strong>${esc(fmtMoney(property.actual_rent_roll || 0))}</strong></section>
     </div>
-    <div class="kodi-chips mb-3" role="group" aria-label="Filter units by state">${STATUS_FILTERS.map((s) => `<button class="kodi-filter ${s === (query.status || 'all') ? 'active' : ''}" aria-pressed="${s === (query.status || 'all')}" data-status="${s}">${esc(s === 'all' ? 'All' : label(s))}</button>`).join('')}</div>
-    <div id="units" class="kodi-unit-grid">${skeleton(2)}</div>`);
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <div class="kodi-seg" role="group" aria-label="Unit view">
+        <button type="button" data-view="3d" aria-pressed="false">${icon('building', 16)} 3D building</button>
+        <button type="button" data-view="grid" aria-pressed="false">${icon('grid', 16)} Grid</button></div>
+      <div class="kodi-chips flex-grow-1 min-w-0" role="group" aria-label="Filter units by state">${STATUS_FILTERS.map((s) => `<button class="kodi-filter ${s === (query.status || 'all') ? 'active' : ''}" aria-pressed="${s === (query.status || 'all')}" data-status="${s}">${esc(s === 'all' ? 'All' : label(s))}</button>`).join('')}</div>
+    </div>
+    <div id="units">${skeleton(2)}</div>`);
 
   let filter = query.status || 'all';
-  const load = async () => {
-    const box = main.querySelector('#units');
-    try {
-      const units = await api(acct(`/units?property_id=${id}${filter !== 'all' ? `&status=${filter}` : ''}&limit=500`));
-      box.innerHTML = units.length ? units.map((u) => `
+  let view = (() => { try { return localStorage.getItem('kodi.unitView') || '3d'; } catch { return '3d'; } })();
+  let units = null;
+  let stopTwin = () => {};
+  const unitCard = (u) => `
         <a class="kodi-unit kodi-unit-${u.status}" href="#/units/${u.id}">
           <div class="d-flex justify-content-between align-items-start"><strong class="kodi-unit-no">${esc(u.unit_number)}</strong>${badge(u.status)}</div>
           <span class="small text-secondary">${esc(label(u.unit_type))}</span>
           <span class="kodi-unit-rent">${esc(fmtMoney(u.monthly_rent))}</span>
           ${u.tenant_name ? `<span class="small text-truncate">${icon('users', 13)} ${esc(u.tenant_name)}</span>` : '<span class="small text-secondary">No tenant</span>'}
           ${u.financial_state && u.financial_state !== 'clear' && u.tenant_name ? `<span class="small text-${u.financial_state === 'in_arrears' ? 'danger' : 'warning'}">${esc(fmtMoney(u.outstanding_balance))} due</span>` : ''}
-        </a>`).join('') : emptyState('door', filter === 'all' ? 'No units yet' : `No ${label(filter).toLowerCase()} units`,
-        filter === 'all' ? 'Add each door, room or hostel bed you rent out.' : '',
-        state.isStaff && filter === 'all' ? '<button class="btn btn-primary" data-add>Add unit</button> <button class="btn btn-light" data-bulk>Add many</button>' : '');
-    } catch (err) { box.innerHTML = errorBox(err); }
+        </a>`;
+  const render = () => {
+    const box = main.querySelector('#units');
+    main.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
+    stopTwin();
+    if (!units.length) {
+      box.className = '';
+      box.innerHTML = emptyState('door', 'No units yet', 'Add each door, room or hostel bed you rent out.',
+        state.isStaff ? '<button class="btn btn-primary" data-add>Add unit</button> <button class="btn btn-light" data-bulk>Add many</button>' : '');
+      return;
+    }
+    if (view === '3d') {
+      box.className = '';
+      box.innerHTML = twinHtml(units);
+      stopTwin = wireTwin(box, units);
+      filterTwin(box, filter);
+      return;
+    }
+    const shown = filter === 'all' ? units : units.filter((u) => u.status === filter);
+    box.className = shown.length ? 'kodi-unit-grid' : '';
+    box.innerHTML = shown.length ? shown.map(unitCard).join('') : emptyState('door', `No ${label(filter).toLowerCase()} units`);
+  };
+  const load = async () => {
+    try {
+      units = await api(acct(`/units?property_id=${id}&limit=500`));
+      render();
+    } catch (err) { main.querySelector('#units').innerHTML = errorBox(err); }
   };
 
   main.addEventListener('click', async (e) => {
@@ -231,7 +259,13 @@ export async function propertyDetailView({ id }, query) {
       filter = chip.dataset.status;
       main.querySelectorAll('[data-status]').forEach((c) => { c.classList.toggle('active', c === chip); c.setAttribute('aria-pressed', String(c === chip)); });
       setQuery({ status: filter === 'all' ? '' : filter });
-      load();
+      if (units) { if (view === '3d') filterTwin(main.querySelector('#units'), filter); else render(); }
+    }
+    const v = e.target.closest('[data-view]');
+    if (v && units) {
+      view = v.dataset.view;
+      try { localStorage.setItem('kodi.unitView', view); } catch { /* private mode */ }
+      render();
     }
     if (e.target.closest('[data-add]')) { if (await addUnitModal(property)) { toast('Unit added', { variant: 'success' }); propertyDetailView({ id }, {}); } }
     if (e.target.closest('[data-bulk]')) { const r = await bulkUnitsModal(property); if (r?.created) { toast(`${r.created} units created`, { variant: 'success' }); propertyDetailView({ id }, {}); } }
@@ -245,7 +279,8 @@ export async function propertyDetailView({ id }, query) {
   });
   await load();
   if (query.addunit && state.isStaff) main.querySelector('[data-add]')?.click();
-  return live('event:unit_status_changed', (d) => { if (d.property_id === id || !d.property_id) load(); });
+  const off = live('event:unit_status_changed', (d) => { if (d.property_id === id || !d.property_id) load(); });
+  return () => { off(); stopTwin(); };
 }
 
 // ------------------------------------------------------------------ unit detail

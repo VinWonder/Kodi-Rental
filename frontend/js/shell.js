@@ -6,6 +6,7 @@ import { rt } from './realtime.js';
 import { currentPath } from './router.js';
 import { state } from './state.js';
 import { esc, timeAgo } from './ui.js';
+import { countUp, mountDone } from './fx.js';
 
 export const $main = () => document.getElementById('main');
 
@@ -43,7 +44,9 @@ export function mount(html) {
   viewSubs.splice(0).forEach((off) => off());
   const main = $main();
   main.innerHTML = `<div class="kodi-view">${html}</div>`;
+  mountDone();
   hydrateMedia(main);
+  countUp(main);
   window.scrollTo({ top: 0, behavior: 'instant' });
   highlightNav();
   // Return the per-screen element, not #main: event listeners that screens
@@ -97,7 +100,7 @@ export function renderChrome() {
   const account = document.getElementById('account-switch');
   const userMenu = document.getElementById('user-menu');
   const bell = document.getElementById('bell');
-  [userMenu, bell].forEach((el) => el.classList.toggle('d-none', !signedIn));
+  [userMenu, bell, document.getElementById('palette-btn')].forEach((el) => el.classList.toggle('d-none', !signedIn));
   // Landlords reach Messages from the top bar on phones (tenants have a Chat tab).
   document.getElementById('chat-shortcut').classList.toggle('d-none', !signedIn || state.mode !== 'landlord');
   if (!signedIn) {

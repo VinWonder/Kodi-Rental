@@ -2,6 +2,7 @@
 import { api } from '../api.js';
 import { barChart, donut, emptyState, errorBox, house3d, icon, label, money, skeleton, stat } from '../components.js';
 import { live, scopedMount } from '../shell.js';
+import { countUp } from '../fx.js';
 import { acct, state } from '../state.js';
 import { esc, fmtMoney, timeAgo } from '../ui.js';
 
@@ -51,7 +52,7 @@ export async function dashboardView() {
         <section class="kodi-banner-hero" aria-label="This month">
           <div>
             <span class="kodi-eyebrow">Collected this month</span>
-            <strong class="kodi-big">${esc(fmtMoney(d.this_month.collected))}</strong>
+            <strong class="kodi-big" data-count="${Number(d.this_month.collected)}" data-format="money">${esc(fmtMoney(d.this_month.collected))}</strong>
             <p>${collectionRate > 100
               ? `${esc(fmtMoney(d.this_month.invoiced))} billed, including arrears and deposits paid`
               : `${collectionRate}% of ${esc(fmtMoney(d.this_month.invoiced))} billed this month`}</p>
@@ -65,10 +66,10 @@ export async function dashboardView() {
           ${house3d('sm')}
         </section>
         <div class="kodi-kpis">
-          ${stat('Rent in arrears', esc(fmtMoney(d.arrears.amount_overdue)), { tone: Number(d.arrears.amount_overdue) ? 'danger' : '', iconName: 'alert',
+          ${stat('Rent in arrears', esc(fmtMoney(d.arrears.amount_overdue)), { tone: Number(d.arrears.amount_overdue) ? 'danger' : '', iconName: 'alert', count: d.arrears.amount_overdue, format: 'money',
             hint: `<a href="#/reports?tab=defaulters">${d.arrears.defaulters} tenant(s) overdue</a>` })}
-          ${stat('Occupancy', `${esc(o.occupancy_rate_pct)}%`, { iconName: 'door', hint: `${o.occupied} of ${o.total_units} units occupied` })}
-          ${stat('Open repairs', String(openIssues), { tone: d.open_issues.emergency ? 'danger' : '', iconName: 'wrench',
+          ${stat('Occupancy', `${esc(o.occupancy_rate_pct)}%`, { iconName: 'door', count: o.occupancy_rate_pct, format: 'pct', hint: `${o.occupied} of ${o.total_units} units occupied` })}
+          ${stat('Open repairs', String(openIssues), { tone: d.open_issues.emergency ? 'danger' : '', iconName: 'wrench', count: openIssues,
             hint: PRIORITY_ORDER.filter((p) => d.open_issues[p]).map((p) => `${d.open_issues[p]} ${p}`).join(' · ') || 'Nothing pending' })}
         </div>
         <div class="row g-3">
@@ -121,6 +122,7 @@ export async function dashboardView() {
             </section>
           </div>
         </div>`;
+      countUp(body);
     } catch (err) { body.innerHTML = errorBox(err); }
   };
   await load();

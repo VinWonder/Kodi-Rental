@@ -51,12 +51,14 @@ export async function resolve() {
     if (!m) continue;
     const params = Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])]));
     if (!guard(r, path)) return;
-    beforeRoute(path);
+    await beforeRoute(path);
+    if (parseHash().path !== path) return; // the user moved on while the transition started
     const result = await r.handler(params, query);
     if (typeof result === 'function' && current.path === path) current.cleanup = result;
     return;
   }
-  beforeRoute(path);
+  await beforeRoute(path);
+  if (parseHash().path !== path) return;
   if (notFound) notFound(path);
 }
 

@@ -162,12 +162,12 @@ export function emptyState(iconName, title, text = '', action = '') {
 export const skeleton = (rows = 3) => `<div class="kodi-card placeholder-glow">${Array.from({ length: rows },
   (_, i) => `<p class="mb-2"><span class="placeholder col-${[7, 10, 5, 8][i % 4]} rounded"></span></p>`).join('')}</div>`;
 
-export function stat(labelText, value, { tone = '', hint = '', iconName = '' } = {}) {
+export function stat(labelText, value, { tone = '', hint = '', iconName = '', count = null, format = 'int' } = {}) {
   return `<section class="kodi-card kodi-stat-card" data-tilt="5">
     <div class="d-flex align-items-center justify-content-between mb-1">
       <span class="text-secondary small">${esc(labelText)}</span>${iconName ? `<span class="kodi-stat-icon ${tone ? `text-${tone}` : ''}">${icon(iconName, 18)}</span>` : ''}
     </div>
-    <div class="kodi-stat ${tone ? `text-${tone}` : ''}">${value}</div>
+    <div class="kodi-stat ${tone ? `text-${tone}` : ''}" ${count !== null && Number.isFinite(Number(count)) ? `data-count="${Number(count)}" data-format="${format}"` : ''}>${value}</div>
     ${hint ? `<div class="small text-secondary">${hint}</div>` : ''}
   </section>`;
 }

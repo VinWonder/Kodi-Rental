@@ -4,12 +4,13 @@ import { counties, field, house3d, icon, select } from '../components.js';
 import { navigate } from '../router.js';
 import { scopedMount } from '../shell.js';
 import { setBusy, toast } from '../ui.js';
+import { daypart } from '../fx.js';
 
 function authCard(inner, { wide = false } = {}) {
   document.body.classList.add('is-welcome');
   return `<section class="kodi-welcome">
-    <div class="kodi-welcome-hero">
-      <div class="kodi-stars"></div>
+    <div class="kodi-welcome-hero" data-daypart="${daypart()}">
+      <div class="kodi-stars"></div><i class="kodi-orb" aria-hidden="true"></i><i class="kodi-cloud c1" aria-hidden="true"></i><i class="kodi-cloud c2" aria-hidden="true"></i>
       <div class="kodi-welcome-brand">
         <a href="#/login" aria-label="Kodi home"><img src="/icons/icon-192.png" alt="" width="34" height="34" class="rounded-3"><span>Kodi</span></a>
         <a class="btn btn-glass btn-sm" href="#/vacancies">${icon('search', 16)} Find a house</a>
@@ -156,4 +157,32 @@ export function inviteView(_, query) {
     toast(`Welcome, ${data.user.full_name.split(' ')[0]}!`, { variant: 'success' });
     navigate('/', { replace: true });
   });
+}
+
+/** First visit: a full-screen welcome in the spirit of the best property apps. */
+export function welcomeView() {
+  const mount = scopedMount();
+  document.body.classList.add('is-welcome');
+  mount(`<section class="kodi-landing" data-daypart="${daypart()}">
+    <div class="kodi-stars"></div><i class="kodi-orb" aria-hidden="true"></i><i class="kodi-cloud c1" aria-hidden="true"></i><i class="kodi-cloud c2" aria-hidden="true"></i>
+    <div class="kodi-landing-top">
+      <span class="kodi-landing-brand"><img src="/icons/icon-192.png" alt="" width="40" height="40" class="rounded-3"> Kodi</span>
+      <a class="btn btn-glass btn-sm" href="#/login">Sign in</a>
+    </div>
+    <div class="kodi-landing-stage">${house3d('lg')}</div>
+    <div class="kodi-landing-copy">
+      <h1>Find your<br><em>perfect place.</em></h1>
+      <p>Houses to let across Kenya, rent paid by M-Pesa and a landlord who answers. No caretaker needed.</p>
+      <div class="kodi-landing-cta">
+        <a class="btn btn-accent btn-lg" href="#/vacancies">${icon('search', 20)} Let's find a house</a>
+        <a class="btn btn-glass btn-lg" href="#/register">${icon('building', 20)} I'm a landlord</a>
+      </div>
+      <p class="kodi-landing-signin">Already have an account? <a href="#/login">Sign in</a></p>
+      <ul class="kodi-landing-stats">
+        <li><b>${icon('phone', 18)}</b><span>Pay rent by M-Pesa, get receipts instantly</span></li>
+        <li><b>${icon('wrench', 18)}</b><span>Report repairs with photos, track every step</span></li>
+        <li><b>${icon('chat', 18)}</b><span>Chat and video-call your landlord in the app</span></li>
+      </ul>
+    </div>
+  </section>`);
 }

@@ -49,13 +49,16 @@ frontend/
   offline.html               Fallback page
   css/app.css                Base styles and components
   css/living.css             Design layer: palette, 3D house, tilt, explore pages
+  css/wow.css                Transitions, 3D twin, palette, smart search, skies, landing
   js/
     app.js                   Routes, auth guard, global wiring
     router.js shell.js       Hash router; layout, nav, render scopes
     api.js realtime.js       REST client (token refresh); WebSocket client
     calls.js                 WebRTC voice/video calls
     components.js            Icons, modals/forms, badges, charts, uploads, signature pad, 3D house
-    tilt.js                  3D pointer tilt for cards
+    tilt.js twin.js          3D pointer tilt; 3D building twin
+    fx.js palette.js         Transitions, count-up, confetti; Ctrl+K command palette
+    smartsearch.js           Plain-English house search parser
     pwa.js offline.js        Service worker, install, push; offline pack
     views/                   One module per area (dashboard, properties, tenants,
                              leases, billing, issues, chat, reports, settings, ...)
@@ -132,6 +135,13 @@ There is also a public vacancy search at `#/vacancies` that needs no sign-in.
   - swipeable photo cards with a save heart, and a "Saved" tab kept on the device
   - a photo-collage detail page with an amenities list
   - a sticky price and contact bar
+- **Beyond a listings app:**
+  - *3D building twin:* each property is drawn as a 3D building you can rotate, floor by floor. Units are coloured by state, occupied homes have lit windows, units in arrears glow red, and tapping a unit opens it (`js/twin.js`).
+  - *Smart search:* type or say "2 bedroom in Kilimani under 40k". The app pulls out the home type, budget and county on the device, and shows how it understood the request (`js/smartsearch.js`).
+  - *Book a viewing:* pick a day and a time slot; the request goes to the landlord on WhatsApp or SMS.
+  - *Command palette:* press Ctrl+K (or ⌘K) to jump to any screen, tenant or unit (`js/palette.js`).
+  - *Motion:* screens change with the View Transitions API, a listing photo grows into the detail page, cards animate as you scroll, and numbers count up. M-Pesa payments land with confetti and a vibration (`js/fx.js`, `css/wow.css`).
+  - *Living sky:* the welcome screens follow the time of day (dawn, day, dusk, night).
 - **Phones first:** 44px touch targets, safe-area insets, swipeable figure cards and board columns. Desktops get a sidebar.
 - **Accessibility:** checked with axe-core (WCAG 2.1 AA plus best practice) on about 55 screens across light/dark and phone/desktop. That covers:
   - colour contrast
