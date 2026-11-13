@@ -87,19 +87,20 @@ export async function propertiesView(_, query) {
       const rows = await api(acct(`/properties${q ? `?q=${encodeURIComponent(q)}` : ''}`));
       box.innerHTML = rows.length ? rows.map((p) => {
         const pct = Number(p.occupancy_rate_pct || 0);
-        return `<a class="kodi-card kodi-property" href="#/properties/${p.id}">
-          <div class="d-flex justify-content-between align-items-start gap-2">
-            <div class="min-w-0"><h2 class="h6 fw-bold mb-0 text-truncate">${esc(p.name)}</h2>
-              <p class="small text-secondary mb-0">${icon('map', 14)} ${esc(p.area)}, ${esc(p.county_name)}</p></div>
-            <span class="kodi-chip">${esc(label(p.property_type))}</span>
-          </div>
-          <div class="kodi-progress my-3" role="progressbar" aria-label="Occupancy" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
-            <span style="width:${pct}%"></span></div>
-          <div class="d-flex justify-content-between small">
-            <span><strong>${p.occupied || 0}</strong>/${p.total_units || 0} occupied</span>
-            <span class="text-success">${p.vacant || 0} vacant</span>
-            <span class="text-secondary">${esc(fmtMoney(p.actual_rent_roll || 0))}/mo</span>
-          </div></a>`;
+        const tone = [...String(p.name)].reduce((a, c) => a + c.charCodeAt(0), 0) % 4;
+        return `<a class="kodi-card kodi-property p-0" href="#/properties/${p.id}" data-tilt="5">
+          <div class="kodi-prop-cover tone-${tone}">${icon('building', 46)}
+            <span class="kodi-prop-tag">${esc(label(p.property_type))}</span><span class="kodi-prop-occ">${Math.round(pct)}% occupied</span></div>
+          <div class="p-3">
+            <h2 class="h6 fw-bold mb-0 text-truncate">${esc(p.name)}</h2>
+            <p class="small text-secondary mb-0 text-truncate">${icon('map', 14)} ${esc(p.area)}, ${esc(p.county_name)}</p>
+            <div class="kodi-progress my-3" role="progressbar" aria-label="Occupancy" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+              <span style="width:${pct}%"></span></div>
+            <div class="d-flex justify-content-between small gap-2">
+              <span><strong>${p.occupied || 0}</strong>/${p.total_units || 0} occupied</span>
+              <span class="text-success">${p.vacant || 0} vacant</span>
+              <span class="text-secondary">${esc(fmtMoney(p.actual_rent_roll || 0))}/mo</span>
+            </div></div></a>`;
       }).join('') : emptyState('building', q ? 'No property matches' : 'No properties yet',
         q ? 'Try a different name or estate.' : 'Add your first building, then its units (doors).',
         state.isStaff && !q ? '<button class="btn btn-primary" data-new>Add property</button>' : '');

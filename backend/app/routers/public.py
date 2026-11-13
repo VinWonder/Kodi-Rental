@@ -70,6 +70,7 @@ async def search_vacancies(
                    v.area, v.ward, v.landmark, v.latitude, v.longitude, v.amenities, v.county_id, v.county_name,
                    v.sub_county_name,
                    CASE WHEN cover.media_id IS NOT NULL THEN '/api/v1/public/media/' || cover.media_id END AS cover_url,
+                   COALESCE(photos.urls, ARRAY[]::text[]) AS photos,
                    -- Kenya sits on the equator, so 1 degree ~ 111.32 km on both axes (error < 1%).
                    CASE WHEN $9::float8 IS NOT NULL AND $10::float8 IS NOT NULL AND v.latitude IS NOT NULL
                         THEN round(((point(v.longitude, v.latitude) <-> point($9, $10)) * 111.32)::numeric, 2)
@@ -77,6 +78,10 @@ async def search_vacancies(
             FROM v_public_vacancies v
             LEFT JOIN LATERAL (SELECT um.media_id FROM unit_media um
                                WHERE um.unit_id = v.unit_id ORDER BY um.is_cover DESC, um.sort_order LIMIT 1) cover ON true
+            -- Up to five photos for the swipeable card carousel.
+            LEFT JOIN LATERAL (SELECT array_agg('/api/v1/public/media/' || p.media_id ORDER BY p.is_cover DESC, p.sort_order) AS urls
+                               FROM (SELECT um.media_id, um.is_cover, um.sort_order FROM unit_media um
+                                     WHERE um.unit_id = v.unit_id ORDER BY um.is_cover DESC, um.sort_order LIMIT 5) p) photos ON true
             WHERE ($1::smallint IS NULL OR v.county_id = $1)
               AND ($2::integer IS NULL OR v.property_id IN (SELECT id FROM properties WHERE sub_county_id = $2))
               AND ($3::text IS NULL OR v.property_id IN (

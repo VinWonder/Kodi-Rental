@@ -56,6 +56,18 @@ const PATHS = {
   grid: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
   calendar: 'M3 4h18v18H3zM16 2v4M8 2v4M3 10h18',
   layers: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+  heart: 'M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 00-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 000-7.8z',
+  bed: 'M2 20v-8a2 2 0 012-2h16a2 2 0 012 2v8M2 16h20M6 10V6a2 2 0 012-2h8a2 2 0 012 2v4M12 4v6',
+  bath: 'M4 12h16v3a5 5 0 01-5 5H9a5 5 0 01-5-5zM6 12V5a2 2 0 013.5-1.3M7 20l-1 2M17 20l1 2',
+  ruler: 'M21.3 8.7L8.7 21.3a1 1 0 01-1.4 0l-4.6-4.6a1 1 0 010-1.4L15.3 2.7a1 1 0 011.4 0l4.6 4.6a1 1 0 010 1.4zM7.5 10.5l2 2M10.5 7.5l2 2M13.5 4.5l2 2M4.5 13.5l2 2',
+  wifi: 'M5 12.6a10 10 0 0114 0M1.4 9a15 15 0 0121.2 0M8.5 16.1a5 5 0 017 0M12 20h.01',
+  car: 'M5 17h14M5 17a2 2 0 11-4 0v-4l2.5-6h17L23 13v4a2 2 0 11-4 0M5 17a2 2 0 104 0h6a2 2 0 104 0M3 13h18',
+  sparkle: 'M12 3l1.9 5.6L19.5 10.5l-5.6 1.9L12 18l-1.9-5.6L4.5 10.5l5.6-1.9zM19 3v4M17 5h4M5 17v4M3 19h4',
+  arrow: 'M5 12h14M13 6l6 6-6 6',
+  sliders: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+  sun: 'M12 17a5 5 0 100-10 5 5 0 000 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4',
+  lock: 'M5 11h14v10H5zM8 11V7a4 4 0 018 0v4',
+  store: 'M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9h18M9 20v-6h6v6',
 };
 
 export function icon(name, size = 20, cls = '') {
@@ -114,6 +126,31 @@ export function pageHeader(title, { subtitle = '', actions = '', back = '' } = {
   </header>`;
 }
 
+/** Section title with an optional "See all" link (Airbnb-style rhythm). */
+export function sectionHead(title, href = '', linkText = 'See all') {
+  return `<div class="kodi-section-head"><h2>${esc(title)}</h2>${href ? `<a href="${esc(href)}">${esc(linkText)} ${icon('arrow', 14)}</a>` : ''}</div>`;
+}
+
+/**
+ * A real CSS 3D house (walls, gable roof, lit windows, lawn and a tree built
+ * from planes in 3D space) that turns slowly. Pure CSS, works offline, no
+ * WebGL. Decorative, so hidden from screen readers. size: 'lg' | 'md' | 'sm'.
+ */
+export function house3d(size = 'lg') {
+  const win = (cls) => `<b class="h3-win ${cls}"></b>`;
+  return `<div class="kodi-house3d is-${size}" aria-hidden="true"><div class="h3-float"><div class="h3-spin">
+    <i class="h3-lawn"></i>
+    <i class="h3-face h3-front"><b class="h3-door"></b>${win('w-a')}${win('w-b')}</i>
+    <i class="h3-face h3-back">${win('w-a')}${win('w-b')}${win('w-c')}</i>
+    <i class="h3-face h3-side h3-left">${win('w-s')}</i>
+    <i class="h3-face h3-side h3-right">${win('w-s')}</i>
+    <i class="h3-gable h3-gable-f"><b class="h3-win w-g"></b></i><i class="h3-gable h3-gable-b"></i>
+    <i class="h3-roof h3-roof-l"></i><i class="h3-roof h3-roof-r"></i>
+    <i class="h3-chimney"></i>
+    <i class="h3-tree"></i><i class="h3-tree h3-tree-x"></i>
+  </div></div><i class="h3-shadow"></i></div>`;
+}
+
 export function emptyState(iconName, title, text = '', action = '') {
   return `<div class="kodi-empty">
     <div class="kodi-empty-icon">${icon(iconName, 30)}</div>
@@ -126,7 +163,7 @@ export const skeleton = (rows = 3) => `<div class="kodi-card placeholder-glow">$
   (_, i) => `<p class="mb-2"><span class="placeholder col-${[7, 10, 5, 8][i % 4]} rounded"></span></p>`).join('')}</div>`;
 
 export function stat(labelText, value, { tone = '', hint = '', iconName = '' } = {}) {
-  return `<section class="kodi-card kodi-stat-card">
+  return `<section class="kodi-card kodi-stat-card" data-tilt="5">
     <div class="d-flex align-items-center justify-content-between mb-1">
       <span class="text-secondary small">${esc(labelText)}</span>${iconName ? `<span class="kodi-stat-icon ${tone ? `text-${tone}` : ''}">${icon(iconName, 18)}</span>` : ''}
     </div>

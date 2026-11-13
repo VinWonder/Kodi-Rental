@@ -1,6 +1,6 @@
 // Tenant home and the notifications page.
 import { api } from '../api.js';
-import { badge, emptyState, errorBox, icon, pageHeader, skeleton } from '../components.js';
+import { badge, emptyState, errorBox, icon, pageHeader, sectionHead, skeleton } from '../components.js';
 import { live, scopedMount, setUnread } from '../shell.js';
 import { state } from '../state.js';
 import { esc, fmtDate, fmtMoney, timeAgo } from '../ui.js';
@@ -9,22 +9,35 @@ import { stkPushFlow } from './billing.js';
 export async function tenantHomeView() {
   const mount = scopedMount();
   const t = state.tenancy;
-  const main = mount(`<section class="kodi-hero mb-3">
-      <div><p class="mb-1 opacity-75 small">${esc(t?.business_name || '')}</p>
-        <h1 class="h4 fw-bold mb-0">Hello, ${esc(state.user.full_name.split(' ')[0])}</h1>
-        <p class="mb-0 opacity-75 small">${t?.unit_number ? `Unit ${esc(t.unit_number)} · ${esc(t.property_name)}` : 'Welcome to Kodi'}</p></div>
-      <div class="kodi-hero-balance" id="balance"><span class="placeholder col-8"></span></div>
-    </section>
-    <div id="lease-alert"></div>
-    <div class="kodi-quick mb-3">
-      <a href="#/invoices">${icon('cash')}<span>Pay rent</span></a>
-      <a href="#/issues?new=1">${icon('wrench')}<span>Report a problem</span></a>
-      <a href="#/chat">${icon('chat')}<span>Message landlord</span></a>
-      <a href="#/statement">${icon('receipt')}<span>Statement</span></a>
+  const first = state.user.full_name.split(' ')[0];
+  const main = mount(`<header class="kodi-greet">
+      <span class="kodi-avatar" aria-hidden="true">${esc(first[0] || '?')}</span>
+      <div class="min-w-0"><h1 class="text-truncate">Hello, ${esc(first)}</h1>
+        <p class="text-truncate">${t?.unit_number ? `Unit ${esc(t.unit_number)} · ${esc(t.property_name)}` : 'Welcome to Kodi'}</p></div>
+    </header>
+    <div class="kodi-tenant-top">
+      <div class="kodi-rentcard-wrap">
+        <section class="kodi-rentcard" data-tilt="9" aria-label="Rent balance">
+          <div class="kodi-rentcard-top"><span class="kodi-rentcard-chip" aria-hidden="true"></span>
+            <span class="text-truncate">${esc(t?.business_name || 'Kodi')}</span></div>
+          <div class="kodi-rentcard-balance" id="balance"><span>Balance</span><strong><span class="placeholder col-6"></span></strong></div>
+          <div class="kodi-rentcard-foot"><span><span class="d-block">Home</span><strong>${t?.unit_number ? `Unit ${esc(t.unit_number)}` : '-'}</strong></span>
+            <span id="balance-action"></span></div>
+        </section>
+      </div>
+      <div>
+        <div id="lease-alert"></div>
+        <div class="kodi-quick">
+          <a href="#/invoices">${icon('cash')}<span>Pay rent</span></a>
+          <a href="#/issues?new=1">${icon('wrench')}<span>Report a problem</span></a>
+          <a href="#/chat">${icon('chat')}<span>Message landlord</span></a>
+          <a href="#/statement">${icon('receipt')}<span>Statement</span></a>
+        </div>
+      </div>
     </div>
     <div class="row g-3">
-      <div class="col-lg-6"><section class="kodi-card h-100" id="due">${skeleton(2)}</section></div>
-      <div class="col-lg-6"><section class="kodi-card h-100" id="repairs">${skeleton(2)}</section></div>
+      <div class="col-lg-6">${sectionHead('Due now', '#/invoices')}<section class="kodi-card" id="due">${skeleton(2)}</section></div>
+      <div class="col-lg-6">${sectionHead('My repairs', '#/issues')}<section class="kodi-card" id="repairs">${skeleton(2)}</section></div>
     </div>`);
 
   const load = async () => {
@@ -38,17 +51,19 @@ export async function tenantHomeView() {
       const invoices = invoicesRes.data;
       const open = invoices.filter((i) => ['issued', 'partially_paid', 'overdue'].includes(i.status));
       const balance = statement.length ? Number(statement.at(-1).running_balance) : open.reduce((a, i) => a + Number(i.balance), 0);
-      main.querySelector('#balance').innerHTML = `<span class="small opacity-75">${balance > 0 ? 'Balance due' : balance < 0 ? 'Credit' : 'All paid up'}</span>
-        <strong>${esc(fmtMoney(Math.abs(balance)))}</strong>${invoicesRes.offline ? '<span class="small opacity-75">Saved copy</span>' : ''}`;
+      main.querySelector('#balance').innerHTML = `<span>${balance > 0 ? 'Balance due' : balance < 0 ? 'Credit on your account' : 'All paid up'}${invoicesRes.offline ? ' · saved copy' : ''}</span>
+        <strong>${esc(fmtMoney(Math.abs(balance)))}</strong>`;
+      main.querySelector('#balance-action').innerHTML = balance > 0 && !invoicesRes.offline
+        ? `<a class="btn btn-white btn-sm" href="#/invoices">${icon('phone', 16)} Pay now</a>`
+        : balance <= 0 ? `<span class="d-inline-flex align-items-center gap-1">${icon('check', 16)} Up to date</span>` : '';
       const pending = leases.find((l) => l.status === 'pending_signature');
       main.querySelector('#lease-alert').innerHTML = pending ? `<a class="kodi-alert kodi-alert-warning mb-3" href="#/lease">${icon('pen', 18)}
         <span><strong>Your lease is ready to sign.</strong> Sign it to activate your tenancy.</span></a>` : '';
-      main.querySelector('#due').innerHTML = `<h2 class="h6 fw-bold">Due now</h2>${open.length ? `<ul class="kodi-list">${open.map((i) => `<li>
+      main.querySelector('#due').innerHTML = `${open.length ? `<ul class="kodi-list">${open.map((i) => `<li>
           <span><strong class="d-block">${esc(fmtMoney(i.balance))}</strong><span class="small ${i.status === 'overdue' ? 'text-danger' : 'text-secondary'}">${esc(i.invoice_number)} · due ${esc(fmtDate(i.due_date))}</span></span>
           <button class="btn btn-success btn-sm" data-pay="${i.id}" ${invoicesRes.offline ? 'disabled' : ''}>${icon('phone', 14)} Pay</button></li>`).join('')}</ul>`
         : `<div class="text-center py-3"><div class="kodi-success-burst sm mx-auto">${icon('check', 24)}</div><p class="small text-secondary mt-2 mb-0">Nothing due. Thank you!</p></div>`}`;
-      main.querySelector('#repairs').innerHTML = `<div class="d-flex justify-content-between"><h2 class="h6 fw-bold">My repairs</h2><a class="small" href="#/issues">All</a></div>
-        ${issues.length ? `<ul class="kodi-list">${issues.slice(0, 4).map((i) => `<li><a href="#/issues/${i.id}" class="text-decoration-none text-body"><strong class="d-block">${esc(i.title)}</strong>
+      main.querySelector('#repairs').innerHTML = `${issues.length ? `<ul class="kodi-list">${issues.slice(0, 4).map((i) => `<li><a href="#/issues/${i.id}" class="text-decoration-none text-body"><strong class="d-block">${esc(i.title)}</strong>
           <span class="small text-secondary">${esc(i.ticket_number)} · ${esc(timeAgo(i.updated_at))}</span></a>${badge(i.status)}</li>`).join('')}</ul>`
           : '<p class="small text-secondary mb-0">No repairs reported. Something broken? Tap "Report a problem".</p>'}`;
       main.querySelectorAll('[data-pay]').forEach((b) => b.addEventListener('click', async () => {

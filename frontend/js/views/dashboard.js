@@ -1,6 +1,6 @@
 // Landlord dashboard: KPIs, occupancy donut, revenue trend, arrears, live feed.
 import { api } from '../api.js';
-import { barChart, donut, emptyState, errorBox, icon, label, money, pageHeader, skeleton, stat } from '../components.js';
+import { barChart, donut, emptyState, errorBox, house3d, icon, label, money, skeleton, stat } from '../components.js';
 import { live, scopedMount } from '../shell.js';
 import { acct, state } from '../state.js';
 import { esc, fmtMoney, timeAgo } from '../ui.js';
@@ -16,11 +16,13 @@ export async function dashboardView() {
   const name = state.user.full_name.split(' ')[0];
   const hour = new Date().getHours();
   const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const main = mount(`${pageHeader(`${greet}, ${name}`, {
-    subtitle: esc(state.membership?.business_name || ''),
-    actions: state.isStaff ? `<a class="btn btn-light" href="#/tenants?new=1">${icon('users', 18)}<span class="kodi-label-md"> Add tenant</span></a>
-      <a class="btn btn-primary" href="#/properties?new=1">${icon('plus', 18)}<span class="kodi-label-md"> Add property</span></a>` : '',
-  })}
+  const main = mount(`<header class="kodi-greet">
+      <span class="kodi-avatar" aria-hidden="true">${esc(name[0] || '?')}</span>
+      <div class="flex-grow-1 min-w-0"><h1 class="text-truncate">${greet}, ${esc(name)}</h1>
+        <p class="text-truncate">${esc(state.membership?.business_name || 'Your rentals at a glance')}</p></div>
+      ${state.isStaff ? `<div class="d-flex gap-2"><a class="btn btn-light" href="#/tenants?new=1">${icon('users', 18)}<span class="kodi-label-md"> Add tenant</span></a>
+        <a class="btn btn-primary" href="#/properties?new=1">${icon('plus', 18)}<span class="kodi-label-md"> Add property</span></a></div>` : ''}
+    </header>
     <div id="dash-body">${skeleton(4)}</div>`);
 
   const load = async () => {
@@ -46,11 +48,23 @@ export async function dashboardView() {
       body.innerHTML = `
         ${d.unmatched_payments ? `<a class="kodi-alert mb-3" href="#/invoices?tab=payments&unmatched=1">${icon('alert', 18)}
           <span><strong>${d.unmatched_payments} M-Pesa payment(s)</strong> could not be matched to a tenant. Tap to assign them.</span></a>` : ''}
-        <div class="kodi-grid kodi-grid-4 mb-3">
-          ${stat('Collected this month', esc(fmtMoney(d.this_month.collected)), { tone: 'success', iconName: 'cash',
-            hint: collectionRate > 100
-              ? `${esc(fmtMoney(d.this_month.invoiced))} billed · incl. arrears & deposits`
-              : `${collectionRate}% of ${esc(fmtMoney(d.this_month.invoiced))} billed this month` })}
+        <section class="kodi-banner-hero" aria-label="This month">
+          <div>
+            <span class="kodi-eyebrow">Collected this month</span>
+            <strong class="kodi-big">${esc(fmtMoney(d.this_month.collected))}</strong>
+            <p>${collectionRate > 100
+              ? `${esc(fmtMoney(d.this_month.invoiced))} billed, including arrears and deposits paid`
+              : `${collectionRate}% of ${esc(fmtMoney(d.this_month.invoiced))} billed this month`}</p>
+            <div class="kodi-progress" role="progressbar" aria-label="Collection rate" aria-valuenow="${Math.min(collectionRate, 100)}" aria-valuemin="0" aria-valuemax="100">
+              <span style="width:${Math.min(collectionRate, 100)}%"></span></div>
+            <div class="d-flex flex-wrap gap-2">
+              <a class="btn btn-white" href="#/invoices?tab=payments&record=1">${icon('cash', 18)} Record payment</a>
+              <a class="btn btn-glass" href="#/reports">${icon('chart', 18)} Reports</a>
+            </div>
+          </div>
+          ${house3d('sm')}
+        </section>
+        <div class="kodi-kpis">
           ${stat('Rent in arrears', esc(fmtMoney(d.arrears.amount_overdue)), { tone: Number(d.arrears.amount_overdue) ? 'danger' : '', iconName: 'alert',
             hint: `<a href="#/reports?tab=defaulters">${d.arrears.defaulters} tenant(s) overdue</a>` })}
           ${stat('Occupancy', `${esc(o.occupancy_rate_pct)}%`, { iconName: 'door', hint: `${o.occupied} of ${o.total_units} units occupied` })}

@@ -88,6 +88,7 @@ def test_full_rental_lifecycle(client, fake_daraja):
     listing = r.json()[0]
     assert listing["unit_id"] == unit_id and listing["distance_km"] < 1
     assert client.get(listing["cover_url"]).status_code == 200
+    assert listing["photos"][0] == listing["cover_url"] and len(listing["photos"]) <= 5
     assert client.get(f"/api/v1/public/vacancies/{unit_id}").json()["landlord_name"] == "Akinyi Homes"
 
     # ------------------------------------------------------------ tenant onboarding via invite

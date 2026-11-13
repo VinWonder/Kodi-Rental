@@ -47,13 +47,15 @@ frontend/
   manifest.json              Install metadata, icons, shortcuts
   sw.js                      Service worker: caching strategies, offline pack, push
   offline.html               Fallback page
-  css/app.css                Theme tokens (light/dark, glass surfaces)
+  css/app.css                Base styles and components
+  css/living.css             Design layer: palette, 3D house, tilt, explore pages
   js/
     app.js                   Routes, auth guard, global wiring
     router.js shell.js       Hash router; layout, nav, render scopes
     api.js realtime.js       REST client (token refresh); WebSocket client
     calls.js                 WebRTC voice/video calls
-    components.js            Icons, modals/forms, badges, charts, uploads, signature pad
+    components.js            Icons, modals/forms, badges, charts, uploads, signature pad, 3D house
+    tilt.js                  3D pointer tilt for cards
     pwa.js offline.js        Service worker, install, push; offline pack
     views/                   One module per area (dashboard, properties, tenants,
                              leases, billing, issues, chat, reports, settings, ...)
@@ -117,15 +119,26 @@ There is also a public vacancy search at `#/vacancies` that needs no sign-in.
 
 ## Design & accessibility
 
-- **Look:** glass and soft (neumorphic) surfaces on a calm blue/green palette, with light and dark themes that follow the device setting. Dark mode uses Bootstrap's own colour mode, so every component is themed.
-- **Phones first:** a five-tab bottom bar with Messages in the top bar, 44px touch targets, safe-area insets, swipeable board columns and collapsible filters. Desktops get a sidebar.
-- **Accessibility:** checked with axe-core (WCAG 2.1 AA plus best practice) on about 55 screens across light/dark and phone/desktop, with no violations. That covers:
+- **Look ("Kodi Living"):** deep emerald and warm gold, photo-first cards, pill-shaped controls and a floating tab bar on phones. Light and dark themes follow the device setting, using Bootstrap's own colour mode so every component is themed. The design layer lives in `frontend/css/living.css`, on top of `app.css`.
+- **3D:** built with CSS 3D transforms only (no WebGL, so it works offline and on low-end phones):
+  - a lit 3D house that turns slowly on the welcome screens and the landlord banner
+  - cards that tilt towards the mouse with a light glare (`js/tilt.js`, mouse and trackpad only)
+  - a 3D rent card on the tenant home
+  - screens that build up in depth as they load
+  - all motion stops when the device asks for reduced motion
+- **Finding a house (public vacancies):** borrows proven marketplace patterns:
+  - one search pill, with filters behind a button
+  - a bar of home-type categories
+  - swipeable photo cards with a save heart, and a "Saved" tab kept on the device
+  - a photo-collage detail page with an amenities list
+  - a sticky price and contact bar
+- **Phones first:** 44px touch targets, safe-area insets, swipeable figure cards and board columns. Desktops get a sidebar.
+- **Accessibility:** checked with axe-core (WCAG 2.1 AA plus best practice) on about 55 screens across light/dark and phone/desktop. That covers:
   - colour contrast
   - names for every control
   - labelled dialogs and live regions
   - keyboard-reachable scroll areas
   - visible focus
-  - reduced-motion support
 - **Errors:** messages are written in plain language, with "Go back" and "Try again" buttons, and never show raw validation text.
 
 ## PWA behaviour

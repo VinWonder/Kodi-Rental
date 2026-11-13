@@ -1,20 +1,35 @@
 // Sign in, landlord registration + business onboarding, tenant invite acceptance.
 import { api, adoptSession, login, reloadProfile, session } from '../api.js';
-import { counties, field, icon, select } from '../components.js';
+import { counties, field, house3d, icon, select } from '../components.js';
 import { navigate } from '../router.js';
 import { scopedMount } from '../shell.js';
 import { setBusy, toast } from '../ui.js';
 
 function authCard(inner, { wide = false } = {}) {
-  return `<section class="kodi-auth">
-    <div class="kodi-auth-card kodi-card ${wide ? 'wide' : ''}">
-      <div class="text-center mb-4">
-        <img src="/icons/icon-192.png" alt="" width="60" height="60" class="rounded-4 shadow-sm mb-3 kodi-pop">
-        ${inner.heading}
+  document.body.classList.add('is-welcome');
+  return `<section class="kodi-welcome">
+    <div class="kodi-welcome-hero">
+      <div class="kodi-stars"></div>
+      <div class="kodi-welcome-brand">
+        <a href="#/login" aria-label="Kodi home"><img src="/icons/icon-192.png" alt="" width="34" height="34" class="rounded-3"><span>Kodi</span></a>
+        <a class="btn btn-glass btn-sm" href="#/vacancies">${icon('search', 16)} Find a house</a>
       </div>
-      ${inner.body}
+      ${house3d('lg')}
+      <div class="kodi-welcome-copy">
+        <h2>Your home,<br><em>without the caretaker.</em></h2>
+        <p>Rent by M-Pesa, instant receipts, repairs and a direct line to your landlord, all on your phone.</p>
+        <ul class="kodi-welcome-points">
+          <li>${icon('phone', 14)} M-Pesa rent</li><li>${icon('receipt', 14)} Instant receipts</li><li>${icon('wrench', 14)} Repairs tracked</li>
+        </ul>
+      </div>
     </div>
-    <p class="text-center small mt-3"><a href="#/vacancies" class="link-secondary">${icon('search', 16)} Looking for a house? Browse vacancies</a></p>
+    <div class="kodi-welcome-side">
+      <div class="kodi-welcome-sheet ${wide ? 'wide' : ''}">
+        <div class="mb-4">${inner.heading}</div>
+        ${inner.body}
+      </div>
+      <p class="kodi-welcome-foot"><a href="#/vacancies">${icon('search', 16)} Looking for a house? Browse vacancies</a></p>
+    </div>
   </section>`;
 }
 

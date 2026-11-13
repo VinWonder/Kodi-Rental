@@ -14,8 +14,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 OUT = Path(__file__).resolve().parents[3] / "frontend" / "icons"
-TOP = (13, 110, 253)       # #0d6efd
-BOTTOM = (8, 66, 152)      # #084298
+TOP = (23, 134, 109)       # #17866d
+BOTTOM = (10, 74, 61)      # #0a4a3d
 WHITE = (255, 255, 255, 255)
 SS = 4                     # supersampling factor
 

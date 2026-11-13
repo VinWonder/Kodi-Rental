@@ -8,6 +8,7 @@ import { rt } from './realtime.js';
 import { fallback, navigate, onBeforeRoute, parseHash, resolve, route, setGuard, startRouter } from './router.js';
 import { bumpUnread, loadBellMenu, mount, newScope, refreshUnread, renderChrome } from './shell.js';
 import { state } from './state.js';
+import { setupTilt } from './tilt.js';
 import { setBusy, toast } from './ui.js';
 import { inviteView, loginView, onboardingView, registerView } from './views/auth.js';
 import { billingView, invoiceDetailView, myInvoicesView, myPaymentsView, myStatementView } from './views/billing.js';
@@ -64,7 +65,10 @@ route('/notifications', notificationsView);
 route('/units', () => navigate('/properties', { replace: true }));
 fallback(() => mount(`<div class="kodi-card mt-4">${emptyState('search', 'Page not found', 'That link does not exist.', '<a class="btn btn-primary" href="#/">Go home</a>')}</div>`));
 
-onBeforeRoute(() => newScope());
+onBeforeRoute(() => {
+  document.body.classList.remove('is-welcome');
+  return newScope();
+});
 
 setGuard((r, path) => {
   const signedIn = session.isSignedIn && state.profile;
@@ -178,6 +182,7 @@ rt.on('event:lease_status_changed', () => reloadProfile().catch(() => {}));
 setupConnectivity();
 setupInstallBanners();
 setupCalls();
+setupTilt();
 renderChrome();
 registerServiceWorker();
 startRouter().finally(() => document.getElementById('boot')?.remove());

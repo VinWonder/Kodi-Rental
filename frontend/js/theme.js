@@ -7,7 +7,7 @@
     var dark = media.matches;
     document.documentElement.setAttribute('data-bs-theme', dark ? 'dark' : 'light');
     var meta = document.querySelector('meta[name="theme-color"]:not([media])');
-    if (meta) meta.setAttribute('content', dark ? '#0a1329' : '#0d6efd');
+    if (meta) meta.setAttribute('content', dark ? '#0b1411' : '#0f6b57');
   }
   apply();
   if (media.addEventListener) media.addEventListener('change', apply); else media.addListener(apply);
