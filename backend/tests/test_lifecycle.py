@@ -3,14 +3,27 @@ signature -> billing -> M-Pesa STK + C2B -> issue -> chat -> WebRTC call ->
 reports -> move-out. Runs against the real schema and triggers."""
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import uuid
 from datetime import datetime
 
+import asyncpg
+
 from app.utils import EAT
-from conftest import PNG_BYTES, wait_for, ws_connect
+from conftest import PNG_BYTES, TEST_DSN, wait_for, ws_connect
 
 WEBM_BYTES = b"\x1a\x45\xdf\xa3" + b"\x00" * 512
+
+
+def _sql(query: str, *args):
+    async def run():
+        conn = await asyncpg.connect(TEST_DSN)
+        try:
+            return await conn.execute(query, *args)
+        finally:
+            await conn.close()
+    return asyncio.run(run())
 
 
 def h(token: str) -> dict[str, str]:
@@ -279,6 +292,31 @@ def test_full_rental_lifecycle(client, fake_daraja):
     for report in ("defaulters", "monthly-revenue", "maintenance-overhead", "occupancy", "unit-financials"):
         assert client.get(f"{A}/reports/{report}", headers=h(L)).status_code == 200, report
     assert client.get(f"{A}/tenants/{tenant_id}/statement", headers=h(L)).json()[-1]["running_balance"] == 0
+
+    # ------------------------------------------------------------ verified tenant reviews
+    R = f"/api/v1/me/reviews/{property_id}"
+    r = client.put(R, headers=h(T), json={"rating": 5, "comment": "Great water supply"})
+    assert r.status_code == 403 and "30 days" in r.json()["detail"], "too soon after moving in"
+    assert client.put(R, headers=h(L), json={"rating": 1}).status_code == 403, "only tenants who rented here"
+    homes = client.get("/api/v1/me/reviews", headers=h(T)).json()
+    assert homes[0]["property_id"] == property_id and homes[0]["eligible"] is False
+    _sql("UPDATE leases SET activated_at = now() - interval '45 days' WHERE id = $1::uuid", lease_id)
+    assert client.put(R, headers=h(T), json={"rating": 6}).status_code == 422
+    r = client.put(R, headers=h(T), json={"rating": 4, "comment": "  Great water supply  "})
+    assert r.status_code == 200 and r.json()["comment"] == "Great water supply", r.text
+    r = client.put(R, headers=h(T), json={"rating": 5, "comment": "Great water, quiet caretaker-free building"})
+    review_id = r.json()["id"]
+    wait_for(lsock, is_notification("system"))
+    mine = client.get(f"{A}/reviews", headers=h(L)).json()
+    assert len(mine) == 1 and mine[0]["rating"] == 5 and mine[0]["author"] == "Jane W."
+    r = client.post(f"{A}/reviews/{review_id}/reply", headers=h(L), json={"reply": "Thank you, Jane!"})
+    assert r.status_code == 200, r.text
+    public = client.get(f"/api/v1/public/properties/{property_id}/reviews").json()
+    assert (public["count"], public["average"], public["distribution"]["5"]) == (1, 5.0, 1)
+    shown = public["reviews"][0]
+    assert shown["author"] == "Jane W." and shown["current_tenant"] is True
+    assert shown["landlord_reply"] == "Thank you, Jane!" and "Wanjiku" not in str(public)
+    assert client.get("/api/v1/me/reviews", headers=h(T)).json()[0]["landlord_reply"] == "Thank you, Jane!"
 
     # ------------------------------------------------------------ downloadable receipts & statements
     receipt_id = client.get("/api/v1/me/payments", headers=h(T)).json()[0]["receipt_id"]

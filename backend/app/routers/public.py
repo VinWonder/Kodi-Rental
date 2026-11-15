@@ -71,6 +71,7 @@ async def search_vacancies(
                    v.sub_county_name,
                    CASE WHEN cover.media_id IS NOT NULL THEN '/api/v1/public/media/' || cover.media_id END AS cover_url,
                    COALESCE(photos.urls, ARRAY[]::text[]) AS photos,
+                   rv.rating_avg, COALESCE(rv.rating_count, 0) AS rating_count,
                    -- Kenya sits on the equator, so 1 degree ~ 111.32 km on both axes (error < 1%).
                    CASE WHEN $9::float8 IS NOT NULL AND $10::float8 IS NOT NULL AND v.latitude IS NOT NULL
                         THEN round(((point(v.longitude, v.latitude) <-> point($9, $10)) * 111.32)::numeric, 2)
@@ -82,6 +83,9 @@ async def search_vacancies(
             LEFT JOIN LATERAL (SELECT array_agg('/api/v1/public/media/' || p.media_id ORDER BY p.is_cover DESC, p.sort_order) AS urls
                                FROM (SELECT um.media_id, um.is_cover, um.sort_order FROM unit_media um
                                      WHERE um.unit_id = v.unit_id ORDER BY um.is_cover DESC, um.sort_order LIMIT 5) p) photos ON true
+            -- Verified-tenant rating of the building (see routers/reviews.py).
+            LEFT JOIN LATERAL (SELECT round(avg(r.rating), 1)::float AS rating_avg, count(*)::int AS rating_count
+                               FROM property_reviews r WHERE r.property_id = v.property_id) rv ON true
             WHERE ($1::smallint IS NULL OR v.county_id = $1)
               AND ($2::integer IS NULL OR v.property_id IN (SELECT id FROM properties WHERE sub_county_id = $2))
               AND ($3::text IS NULL OR v.property_id IN (
@@ -99,8 +103,11 @@ async def search_vacancies(
 @router.get("/public/vacancies/{unit_id}")
 async def vacancy_detail(unit_id: UUID):
     row = await db.fetchrow(
-        """SELECT v.*, a.business_name AS landlord_name, a.contact_phone AS landlord_phone
+        """SELECT v.*, a.business_name AS landlord_name, a.contact_phone AS landlord_phone,
+                  rv.rating_avg, COALESCE(rv.rating_count, 0) AS rating_count
            FROM v_public_vacancies v JOIN accounts a ON a.id = v.account_id
+           LEFT JOIN LATERAL (SELECT round(avg(r.rating), 1)::float AS rating_avg, count(*)::int AS rating_count
+                              FROM property_reviews r WHERE r.property_id = v.property_id) rv ON true
            WHERE v.unit_id = $1""", unit_id)
     unit = or_404(row, "Listing")
     unit.pop("cover_image_key", None)

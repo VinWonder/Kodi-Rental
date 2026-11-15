@@ -24,6 +24,7 @@ import { reportsView } from './views/reports.js';
 import { settingsView } from './views/settings.js';
 import { tenantDetailView, tenantsView } from './views/tenants.js';
 import { vacanciesView, vacancyDetailView } from './views/vacancies.js';
+import { landlordReviewsView, myReviewsView } from './views/reviews.js';
 
 // ------------------------------------------------------------------ routes
 const byMode = (landlord, tenant) => (params, query) => (state.mode === 'landlord' ? landlord : tenant)(params, query);
@@ -61,6 +62,7 @@ route('/issues/:id', byMode(issueDetailView, myIssueDetailView));
 route('/chat', chatView);
 route('/chat/:id', chatView);
 route('/reports', landlordOnly(reportsView));
+route('/reviews', byMode(landlordReviewsView, myReviewsView));
 route('/statement', byMode(() => navigate('/reports?tab=units', { replace: true }), myStatementView));
 route('/lease', myLeaseView);
 route('/settings', settingsView);

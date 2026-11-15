@@ -30,6 +30,7 @@ database/
   schema.sql                 Phase 1 DDL (tables, enums, indexes, triggers, views)
   seeds/001_kenya_locations.sql
   migrations/002_tenant_invites.sql
+  migrations/003_property_reviews.sql   Verified tenant reviews
   tests/smoke_test.sql
 backend/
   app/
@@ -37,7 +38,8 @@ backend/
     config.py                Settings (KODI_* env vars / backend/.env)
     routers/                 auth, accounts, properties, units, tenants, leases, billing,
                              mpesa, hooks (Safaricom), issues, chat, realtime (/ws),
-                             notifications (+ Web Push), media, reports (PDF/CSV), public
+                             notifications (+ Web Push), media, reports (PDF/CSV), public,
+                             reviews (verified tenant ratings)
     services/                daraja, mpesa, realtime hub, chat, calls, scheduler,
                              storage, exports (PDF/CSV), push (Web Push)
     tools/                   gen_vapid.py (push keys), gen_icons.py (PWA icons)
@@ -50,6 +52,8 @@ frontend/
   css/app.css                Base styles and components
   css/living.css             Design layer: palette, 3D house, tilt, explore pages
   css/wow.css                Transitions, 3D twin, palette, smart search, skies, landing
+  css/places.css             Maps (price pins, mini map, pin picker) and reviews
+  vendor/leaflet-1.9.4/      Leaflet map library (BSD-2), served same-origin
   js/
     app.js                   Routes, auth guard, global wiring
     router.js shell.js       Hash router; layout, nav, render scopes
@@ -58,6 +62,7 @@ frontend/
     components.js            Icons, modals/forms, badges, charts, uploads, signature pad, 3D house
     tilt.js twin.js          3D pointer tilt; 3D building twin
     fx.js palette.js         Transitions, count-up, confetti; Ctrl+K command palette
+    map.js                   Lazy Leaflet loader, OpenStreetMap tiles, price/home pins
     smartsearch.js           Plain-English house search parser
     pwa.js offline.js        Service worker, install, push; offline pack
     views/                   One module per area (dashboard, properties, tenants,
@@ -79,6 +84,7 @@ $psql = "C:\Program Files\PostgreSQL\18\bin\psql.exe"
 & $psql -U postgres -d kodi -v ON_ERROR_STOP=1 -f ..\database\schema.sql
 & $psql -U postgres -d kodi -v ON_ERROR_STOP=1 -f ..\database\seeds\001_kenya_locations.sql
 & $psql -U postgres -d kodi -v ON_ERROR_STOP=1 -f ..\database\migrations\002_tenant_invites.sql
+& $psql -U postgres -d kodi -v ON_ERROR_STOP=1 -f ..\database\migrations\003_property_reviews.sql
 
 .venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
 ```
@@ -142,8 +148,11 @@ There is also a public vacancy search at `#/vacancies` that needs no sign-in.
   - *Command palette:* press Ctrl+K (or ⌘K) to jump to any screen, tenant or unit (`js/palette.js`).
   - *Motion:* screens change with the View Transitions API, a listing photo grows into the detail page, cards animate as you scroll, and numbers count up. M-Pesa payments land with confetti and a vibration (`js/fx.js`, `css/wow.css`).
   - *Living sky:* the welcome screens follow the time of day (dawn, day, dusk, night).
+  - *Map view:* "Show map" puts every vacancy on an OpenStreetMap map as a price pin (one pin per building, priced from its cheapest unit). Tap a pin for the homes there. Listings show the area on a mini map, and landlords drop their building's pin on a map in the property form. Leaflet loads only when a map is first shown (`js/map.js`).
+  - *Verified reviews:* only a tenant with a signed lease that has run 30+ days can rate a building, once (editable). Ratings show on cards and listings with a star breakdown. Landlords can reply publicly but cannot edit or delete reviews. Tenants are invited to "Rate your home" after 30 days (`routers/reviews.py`, `js/views/reviews.js`).
+- **Map tiles in production:** `tile.openstreetmap.org` is a donated service with a fair-use policy and can be slow. Before launch, point `TILE_URL` in `js/map.js` at a tile provider you have an account with (MapTiler, Stadia, Thunderforest) and add its host to `img-src` in `index.html`.
 - **Phones first:** 44px touch targets, safe-area insets, swipeable figure cards and board columns. Desktops get a sidebar.
-- **Accessibility:** checked with axe-core (WCAG 2.1 AA plus best practice) on about 55 screens across light/dark and phone/desktop. That covers:
+- **Accessibility:** checked with axe-core (WCAG 2.1 AA plus best practice) on about 70 screens across light/dark and phone/desktop. That covers:
   - colour contrast
   - names for every control
   - labelled dialogs and live regions

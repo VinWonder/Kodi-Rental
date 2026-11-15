@@ -62,6 +62,7 @@ const LANDLORD_NAV = [
   ['/issues', 'wrench', 'Repairs', 'Repairs'],
   ['/chat', 'chat', 'Messages', null],      // phones: top-bar shortcut keeps the tab bar at 5
   ['/reports', 'chart', 'Reports', null],
+  ['/reviews', 'star', 'Reviews', null],
   ['/settings', 'settings', 'Settings', null],
 ];
 const TENANT_NAV = [
@@ -71,6 +72,7 @@ const TENANT_NAV = [
   ['/chat', 'chat', 'Messages', 'Chat'],
   ['/statement', 'receipt', 'Statement', 'Statement'],
   ['/lease', 'pen', 'My lease', null],
+  ['/reviews', 'star', 'Rate my home', null],
   ['/settings', 'settings', 'Settings', null],
 ];
 

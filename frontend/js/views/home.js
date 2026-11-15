@@ -6,6 +6,7 @@ import { state } from '../state.js';
 import { esc, fmtDate, fmtMoney, timeAgo } from '../ui.js';
 import { stkPushFlow } from './billing.js';
 import { countUp } from '../fx.js';
+import { rateNudge } from './reviews.js';
 
 export async function tenantHomeView() {
   const mount = scopedMount();
@@ -28,6 +29,7 @@ export async function tenantHomeView() {
       </div>
       <div>
         <div id="lease-alert"></div>
+        <div id="rate-nudge"></div>
         <div class="kodi-quick">
           <a href="#/invoices">${icon('cash')}<span>Pay rent</span></a>
           <a href="#/issues?new=1">${icon('wrench')}<span>Report a problem</span></a>
@@ -41,6 +43,7 @@ export async function tenantHomeView() {
       <div class="col-lg-6">${sectionHead('My repairs', '#/issues')}<section class="kodi-card" id="repairs">${skeleton(2)}</section></div>
     </div>`);
 
+  rateNudge(main.querySelector('#rate-nudge'));
   const load = async () => {
     try {
       const [invoicesRes, leases, issues, statement] = await Promise.all([

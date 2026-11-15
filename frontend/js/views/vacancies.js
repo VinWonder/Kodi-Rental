@@ -2,12 +2,15 @@
 // the unit state engine. One smart search pill that understands plain
 // English (and voice), category pills, a featured carousel, photo-first cards
 // you can swipe and save, a photo collage that morphs in from the card, a
-// viewing booker and a sticky contact bar.
+// viewing booker and a sticky contact bar. A map view with price pins, and
+// verified tenant ratings on cards and listings.
 import { api } from '../api.js';
 import {
   copyText, counties, emptyState, errorBox, house3d, icon, label, modal, sectionHead, select, skeleton,
 } from '../components.js';
 import { haptic } from '../fx.js';
+import { createMap, homePin, KENYA_BOUNDS, pinLabel, pricePin } from '../map.js';
+import { loadPublicReviews, ratingChip } from './reviews.js';
 import { setQuery } from '../router.js';
 import { scopedMount } from '../shell.js';
 import { parseSearch } from '../smartsearch.js';
@@ -95,12 +98,30 @@ function stayCard(v, { wide = false } = {}) {
     </div>
     <div class="kodi-stay-body">
       <h2 class="kodi-stay-title"><a href="${href}" data-open="${esc(v.unit_id)}"><span>${esc(v.area)}, ${esc(v.county_name)}</span></a>
-        ${isNew(v.listed_at) ? `<span class="kodi-new">${icon('sparkle', 14)} New</span>` : ''}</h2>
+        ${ratingChip(v) || (isNew(v.listed_at) ? `<span class="kodi-new">${icon('sparkle', 14)} New</span>` : '')}</h2>
       <p class="kodi-stay-sub">${esc(name)}</p>
       <p class="kodi-stay-sub">${icon('map', 13)} ${esc(where || '')}</p>
       ${specIcons(v)}
       ${wide ? '' : `<p class="kodi-stay-price"><strong>${esc(fmtMoney(v.monthly_rent))}</strong> month</p>`}
     </div>
+  </article>`;
+}
+
+/** Compact card shown over the map when a price pin is tapped. */
+function mapCard(v) {
+  seen.set(v.unit_id, v);
+  const href = `#/vacancies/${v.unit_id}`;
+  const cover = photosOf(v)[0];
+  return `<article class="kodi-mapcard">
+    <a href="${href}" class="kodi-mapcard-img" tabindex="-1" aria-hidden="true">${cover ? `<img src="${esc(img(cover))}" alt="">` : house3d('sm')}</a>
+    <div class="min-w-0 flex-grow-1">
+      <h2 class="kodi-stay-title"><a href="${href}"><span>${esc(v.area)}, ${esc(v.county_name)}</span></a>${ratingChip(v)}</h2>
+      <p class="kodi-stay-sub text-truncate">${esc(title(v))}</p>
+      ${specIcons(v)}
+      <p class="kodi-stay-price mb-0"><strong>${esc(fmtMoney(v.monthly_rent))}</strong> month</p>
+    </div>
+    <div class="kodi-mapcard-actions">${heartButton(v.unit_id, title(v), 'kodi-round')}
+      <button type="button" class="kodi-round" data-map-close aria-label="Close">${icon('x', 16)}</button></div>
   </article>`;
 }
 
@@ -169,6 +190,9 @@ export async function vacanciesView(_, query) {
   const mount = scopedMount();
   const list = await counties().catch(() => []);
   const active = query.saved ? 'saved' : query.unit_type || '';
+  let view = query.view === 'map' ? 'map' : 'list';
+  let map = null;
+  const dropMap = () => { if (map) { map.remove(); map = null; } };
   const main = mount(`<h1 class="visually-hidden">Houses to let</h1>
     <form class="kodi-explore-top" id="vac-filters" role="search" aria-label="Find a house">
       <div class="kodi-search-pill">
@@ -195,7 +219,8 @@ export async function vacanciesView(_, query) {
         <button type="button" class="kodi-cat-tab" data-cat="${v}" aria-pressed="${v === active}">${icon(ic, 18)}<span>${text}</span></button>`).join('')}
       </nav>
     </form>
-    <div id="vac-results">${skeleton(3)}</div>`);
+    <div id="vac-results">${skeleton(3)}</div>
+    <button type="button" class="kodi-map-toggle" data-view-toggle aria-pressed="${view === 'map'}"></button>`);
 
   const form = main.querySelector('#vac-filters');
   const panel = form.querySelector('#vac-more');
@@ -213,7 +238,8 @@ export async function vacanciesView(_, query) {
   const load = async () => {
     countFilters();
     const params = Object.fromEntries([...new FormData(form)].filter(([, v]) => v));
-    setQuery({ ...params, saved: category === 'saved' ? '1' : '' });
+    setQuery({ ...params, saved: category === 'saved' ? '1' : '', view: view === 'map' ? 'map' : '' });
+    paintToggle();
     // Plain English: pull out home type, budget and county; the rest is the place.
     const said = parseSearch(form.q.value, list);
     const understood = main.querySelector('#vac-understood');
@@ -243,11 +269,14 @@ export async function vacanciesView(_, query) {
         rows = await api(`/api/v1/public/vacancies?${new URLSearchParams(params)}`, { auth: false });
       }
       if (!rows.length) {
+        dropMap();
         box.innerHTML = category === 'saved'
           ? emptyState('heart', 'No saved homes yet', 'Tap the heart on any home to keep it here.', '<button type="button" class="btn btn-primary" data-cat-jump="">Explore homes</button>')
           : emptyState('search', 'No homes match', 'Try another estate, home type or a higher budget.', '<button type="button" class="btn btn-light" data-cat-jump="">Show all homes</button>');
         return;
       }
+      if (view === 'map') { await renderMap(box, rows); return; }
+      dropMap();
       const browsing = category === '' && !params.q && !params.county_id && !params.max_rent && !said.understood;
       const featured = browsing ? rows.filter((r) => r.photos?.length).slice(0, 6) : [];
       const count = `${rows.length} ${rows.length === 1 ? 'home' : 'homes'}${category === 'saved' ? ' saved on this device' : ' available now'}`;
@@ -258,6 +287,67 @@ export async function vacanciesView(_, query) {
         <div class="kodi-stays">${rows.map((v) => stayCard(v)).join('')}</div>`;
     } catch (err) { box.innerHTML = errorBox(err); }
   };
+
+  function paintToggle() {
+    const b = main.querySelector('[data-view-toggle]');
+    b.innerHTML = view === 'map' ? `${icon('list', 18)} Show list` : `${icon('map', 18)} Show map`;
+    b.setAttribute('aria-pressed', String(view === 'map'));
+  }
+
+  // Map view: price pins like a property portal; tap one for a mini card.
+  async function renderMap(box, rows) {
+    const pinned = rows.filter((r) => r.latitude != null && r.longitude != null);
+    const unpinned = rows.length - pinned.length;
+    dropMap();
+    box.innerHTML = `<div class="kodi-mapview">
+        <div class="kodi-mapview-map" role="region" aria-label="Map of ${pinned.length} homes. Price pins can be reached with Tab; Show list gives the same homes as text."></div>
+        <p class="kodi-mapview-meta" aria-live="polite">${pinned.length} ${pinned.length === 1 ? 'home' : 'homes'} on the map${unpinned ? ` · ${unpinned} without a map pin (see the list)` : ''}</p>
+        <div class="kodi-mapview-card" data-map-card hidden></div>
+      </div>`;
+    const el = box.querySelector('.kodi-mapview-map');
+    const cardBox = box.querySelector('[data-map-card]');
+    let m;
+    try { m = await createMap(el); } catch (err) { el.outerHTML = errorBox(err); return; }
+    if (!el.isConnected) { m.remove(); return; }
+    map = m;
+    const L = window.L;
+    let current = null;
+    const closeCard = () => {
+      cardBox.hidden = true;
+      if (current) { current.marker.setIcon(pricePin(L, current.v)); current.marker.setZIndexOffset(0); current = null; }
+    };
+    // One pin per building (units in a building share its coordinates), priced "from" the cheapest.
+    const buildings = new Map();
+    pinned.forEach((v) => {
+      const list = buildings.get(v.property_id) || [];
+      list.push(v);
+      buildings.set(v.property_id, list);
+    });
+    buildings.forEach((list) => {
+      list.sort((a, b) => Number(a.monthly_rent) - Number(b.monthly_rent));
+      const v = list[0];
+      const pin = { ...v, count: list.length };
+      const marker = L.marker([v.latitude, v.longitude], {
+        icon: pricePin(L, pin), keyboard: true, riseOnHover: true,
+        title: list.length > 1 ? `${list.length} homes at ${v.property_name}, from ${pinLabel(v)}` : pinLabel(v),
+      }).addTo(m);
+      marker.on('click', () => {
+        closeCard();
+        current = { v: pin, marker };
+        marker.setIcon(pricePin(L, pin, { active: true }));
+        marker.setZIndexOffset(1000);
+        cardBox.innerHTML = list.length > 1
+          ? `<p class="kodi-mapview-group"><b>${list.length} homes</b> at ${esc(v.property_name)}</p><div class="kodi-mapview-cards">${list.map(mapCard).join('')}</div>`
+          : mapCard(v);
+        cardBox.hidden = false;
+        haptic(6);
+      });
+    });
+    m.on('click', closeCard);
+    cardBox.addEventListener('click', (e) => { if (e.target.closest('[data-map-close]')) closeCard(); });
+    if (pinned.length) m.fitBounds(L.latLngBounds(pinned.map((v) => [v.latitude, v.longitude])), { padding: [56, 56], maxZoom: 15 });
+    else m.fitBounds(KENYA_BOUNDS);
+  }
 
   const setCategory = (value) => {
     category = value;
@@ -283,7 +373,14 @@ export async function vacanciesView(_, query) {
   wireVoice(form.querySelector('[data-voice]'), form.q, load);
   wireCarousels(main);
   wireSaving(main);
+  main.querySelector('[data-view-toggle]').addEventListener('click', () => {
+    view = view === 'map' ? 'list' : 'map';
+    haptic(8);
+    window.scrollTo({ top: 0 });
+    load();
+  });
   load();
+  return dropMap;
 }
 
 // ------------------------------------------------------------------ listing detail
@@ -349,6 +446,9 @@ function viewingSheet(v, phone) {
 
 export async function vacancyDetailView({ id }) {
   const mount = scopedMount();
+  let io = null;
+  let miniMap = null;
+  const cleanup = () => { io?.disconnect(); miniMap?.remove(); };
   const cached = seen.get(id);
   // Paint the photos straight away from the card the user tapped; details follow.
   const main = mount(`<article class="kodi-detail">
@@ -375,6 +475,7 @@ export async function vacancyDetailView({ id }) {
             <div class="d-flex flex-wrap gap-2 mb-2"><span class="kodi-tag is-live"><i class="kodi-live-dot"></i>Available now</span><span class="kodi-tag">${esc(label(v.unit_type))}</span>
               ${isNew(v.listed_at) ? `<span class="kodi-tag">${icon('sparkle', 13)} New</span>` : ''}</div>
             <h1>${esc(name)}</h1>
+            ${v.rating_count ? `<a href="#d-reviews" class="d-inline-block mb-1 text-reset" data-goto-link="d-reviews">${ratingChip(v, { long: true })}</a>` : ''}
             <p class="text-secondary mb-0">${icon('map', 15)} ${esc(v.area)}${v.sub_county_name ? `, ${esc(v.sub_county_name)}` : ''}, ${esc(v.county_name)} · Unit ${esc(v.unit_number)}</p></div>
           <div class="text-end flex-shrink-0"><div class="kodi-detail-price">${esc(fmtMoney(v.monthly_rent))}<small>/month</small></div>
             <div class="kodi-detail-actions mt-2 justify-content-end">${actions}</div></div>
@@ -382,6 +483,7 @@ export async function vacancyDetailView({ id }) {
         <nav class="kodi-detail-tabs" aria-label="Sections">
           <button type="button" data-goto="d-about" aria-current="true">About</button>
           ${amenities.length ? '<button type="button" data-goto="d-offers">What\'s included</button>' : ''}
+          <button type="button" data-goto="d-reviews">Reviews${v.rating_count ? ` (${esc(v.rating_count)})` : ''}</button>
           <button type="button" data-goto="d-where">Location</button>
         </nav>
         <div class="kodi-detail-grid">
@@ -403,7 +505,10 @@ export async function vacancyDetailView({ id }) {
             </section>
             ${amenities.length ? `<section class="kodi-detail-section" id="d-offers"><h2>What this place offers</h2>
               <ul class="kodi-amenities">${amenities.map((a) => `<li>${icon(amenityIcon(a), 24)}<span>${esc(a)}</span></li>`).join('')}</ul></section>` : ''}
+            <section class="kodi-detail-section" id="d-reviews"><h2>${v.rating_count ? `★ ${Number(v.rating_avg).toFixed(1)} · ` : ''}What tenants say</h2>
+              <div data-reviews>${skeleton(1)}</div></section>
             <section class="kodi-detail-section" id="d-where"><h2>Where you'll be</h2>
+              ${v.latitude ? '<div class="kodi-minimap" data-minimap role="region" aria-label="Map showing the area around this home"></div>' : ''}
               <div class="kodi-where">${icon('map', 26)}<div><strong class="d-block">${esc(v.area)}, ${esc(v.county_name)}</strong>
                 <span class="small text-secondary">${v.landmark ? `Near ${esc(v.landmark)}` : 'Exact location shared by the landlord'}</span></div></div>
               ${v.latitude ? `<a class="btn btn-light mt-3" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${esc(v.latitude)},${esc(v.longitude)}">${icon('map', 18)} Open in Maps</a>` : ''}
@@ -438,6 +543,24 @@ export async function vacancyDetailView({ id }) {
       </div>`;
 
     wireSaving(main);
+    loadPublicReviews(main.querySelector('[data-reviews]'), v.property_id);
+    // The location map loads only when scrolled near, so the listing stays light on data.
+    const mini = main.querySelector('[data-minimap]');
+    if (mini) {
+      io = new IntersectionObserver(async ([entry]) => {
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        try {
+          const m = await createMap(mini, { center: [v.latitude, v.longitude], zoom: 15, interactive: false });
+          if (!mini.isConnected) { m.remove(); return; }
+          miniMap = m;
+          const L = window.L;
+          L.circle([v.latitude, v.longitude], { radius: 220, color: '#0f6b57', weight: 1, fillColor: '#2fae8c', fillOpacity: 0.16, interactive: false }).addTo(m);
+          L.marker([v.latitude, v.longitude], { icon: homePin(L), keyboard: false, interactive: false }).addTo(m);
+        } catch (err) { mini.outerHTML = errorBox(err); }
+      }, { rootMargin: '300px' });
+      io.observe(mini);
+    }
     const track = main.querySelector('[data-track]');
     track?.addEventListener('scroll', () => {
       const i = Math.round(track.scrollLeft / Math.max(track.clientWidth, 1));
@@ -456,6 +579,11 @@ export async function vacancyDetailView({ id }) {
           onReady: (el) => el.addEventListener('shown.bs.modal', () => el.querySelector(`#ph-${ph.dataset.photo}`)?.scrollIntoView(), { once: true }),
         });
       }
+      const link = e.target.closest('[data-goto-link]');
+      if (link) {
+        e.preventDefault();
+        main.querySelector(`[data-goto="${link.dataset.gotoLink}"]`)?.click();
+      }
       const go = e.target.closest('[data-goto]');
       if (go) {
         main.querySelectorAll('[data-goto]').forEach((b) => b.setAttribute('aria-current', String(b === go)));
@@ -469,4 +597,5 @@ export async function vacancyDetailView({ id }) {
       }
     });
   } catch (err) { mount(errorBox(err)); }
+  return cleanup;
 }

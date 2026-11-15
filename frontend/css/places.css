@@ -1,0 +1,149 @@
+/* =============================================================================
+   Kodi places layer: maps (Leaflet + OpenStreetMap) and verified reviews.
+   Loaded after wow.css.
+   ============================================================================= */
+
+/* ------------------------------------------------ map base */
+.kodi-map, .kodi-map.leaflet-container { position: relative; z-index: 0; isolation: isolate; overflow: hidden; background: #dfe9e4;
+  font: inherit; border-radius: var(--kodi-radius); }
+.kodi-map.leaflet-container .leaflet-control-attribution { font-size: .68rem; background: color-mix(in srgb, var(--kodi-surface-solid) 85%, transparent); color: var(--kodi-muted);
+  border-radius: 8px 0 0 0; padding: 1px 6px; }
+.kodi-map.leaflet-container .leaflet-control-attribution a { color: var(--kodi-primary-ink); }
+.kodi-map.leaflet-container .leaflet-bar, .leaflet-touch .kodi-map.leaflet-container .leaflet-bar { border: 0; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 24px -10px rgba(10, 40, 32, .45); }
+.kodi-map.leaflet-container .leaflet-bar a { width: 38px; height: 38px; line-height: 38px; color: var(--bs-body-color);
+  background: var(--kodi-surface-solid); border-bottom-color: var(--kodi-border); }
+.kodi-map.leaflet-container .leaflet-bar a:hover { background: color-mix(in srgb, var(--kodi-primary) 10%, var(--kodi-surface-solid)); }
+.kodi-map .leaflet-container:focus-visible, .kodi-map:focus-visible { outline: 3px solid var(--kodi-accent); outline-offset: 2px; }
+/* Night mode: invert the light OSM tiles into a calm dark map. */
+:root[data-bs-theme="dark"] .kodi-map.leaflet-container { background: #0e1714; }
+:root[data-bs-theme="dark"] .kodi-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.7); }
+
+/* ------------------------------------------------ pins */
+.kodi-pin-wrap { background: none; border: 0; }
+.kodi-pin {
+  position: absolute; left: 0; top: 0; transform: translate(-50%, -50%); white-space: nowrap;
+  display: inline-block; padding: .32rem .62rem; border-radius: 999px; font-size: .8rem; font-weight: 800; letter-spacing: -.01em;
+  color: #10231c; background: #fff; border: 1px solid rgba(16, 35, 28, .14);
+  box-shadow: 0 6px 16px -6px rgba(10, 40, 32, .55); cursor: pointer;
+  transition: transform .2s var(--kodi-ease), background .2s, color .2s;
+}
+.kodi-pin-wrap:hover .kodi-pin, .kodi-pin-wrap:focus-visible .kodi-pin { transform: translate(-50%, -50%) scale(1.08); }
+.kodi-pin-wrap:focus-visible { outline: none; }
+.kodi-pin-wrap:focus-visible .kodi-pin { outline: 3px solid var(--kodi-accent); outline-offset: 2px; }
+.kodi-pin-count { position: absolute; top: -8px; right: -8px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 99px;
+  display: grid; place-items: center; font-style: normal; font-size: .68rem; color: #fff; background: var(--kodi-primary); border: 2px solid #fff; }
+.kodi-pin.is-active .kodi-pin-count { background: #10231c; }
+.kodi-mapview-group { margin: 0 0 .4rem; padding: .3rem .75rem; display: inline-block; border-radius: 99px; font-size: .82rem;
+  background: var(--kodi-surface-solid); box-shadow: 0 8px 20px -10px rgba(10, 40, 32, .5); }
+.kodi-mapview-cards { display: grid; grid-auto-flow: column; grid-auto-columns: min(100%, 400px); gap: .6rem; overflow-x: auto;
+  scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 2px; }
+.kodi-mapview-cards::-webkit-scrollbar { display: none; }
+.kodi-mapview-cards > * { scroll-snap-align: start; }
+@media (min-width: 768px) { .kodi-mapview-card:has(.kodi-mapview-cards) { width: min(820px, calc(100% - 32px)); } }
+.kodi-pin.is-active {color: #fff; background: var(--kodi-primary); border-color: var(--kodi-primary); transform: translate(-50%, -50%) scale(1.12); }
+.kodi-home-pin {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; color: #fff;
+  background: linear-gradient(140deg, #2fae8c, var(--kodi-primary)); border: 3px solid #fff;
+  box-shadow: 0 0 0 8px rgba(47, 174, 140, .22), 0 12px 24px -8px rgba(10, 40, 32, .6);
+  animation: kodi-pin-drop .6s var(--kodi-ease) both;
+}
+@keyframes kodi-pin-drop { from { transform: translateY(-24px) scale(.6); opacity: 0; } }
+
+/* ------------------------------------------------ explore: map view */
+.kodi-mapview { position: relative; }
+.kodi-mapview-map { height: max(380px, calc(100dvh - 300px)); box-shadow: var(--kodi-shadow-lift, 0 20px 40px -20px rgba(10, 40, 32, .4)); }
+@media (min-width: 992px) { .kodi-mapview-map { height: max(460px, calc(100dvh - 260px)); } }
+.kodi-mapview-meta { margin: .6rem .25rem 0; font-size: .85rem; color: var(--kodi-muted); }
+.kodi-mapview-card { position: absolute; left: 12px; right: 12px; bottom: 44px; z-index: 500; animation: kodi-card-up .35s var(--kodi-ease) both; }
+.kodi-mapview-card[hidden] { display: none; }
+@media (min-width: 768px) { .kodi-mapview-card { left: 16px; right: auto; width: 400px; } }
+@keyframes kodi-card-up { from { transform: translateY(16px); opacity: 0; } }
+.kodi-mapcard {
+  position: relative; display: flex; gap: .8rem; align-items: stretch; padding: .6rem; border-radius: 20px;
+  background: var(--kodi-surface-solid); border: 1px solid var(--kodi-border); box-shadow: 0 24px 48px -18px rgba(10, 40, 32, .55);
+}
+.kodi-mapcard-img { flex: 0 0 104px; border-radius: 14px; overflow: hidden; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--kodi-primary) 10%, var(--kodi-surface-solid)); }
+.kodi-mapcard-img img { width: 100%; height: 100%; object-fit: cover; }
+.kodi-mapcard .kodi-stay-title { font-size: .95rem; margin: 0 0 .1rem; padding-right: 0; }
+.kodi-mapcard .kodi-stay-specs { margin: .15rem 0; }
+.kodi-mapcard-actions { display: flex; flex-direction: column; gap: .35rem; }
+.kodi-mapcard-actions .kodi-round { width: 34px; height: 34px; }
+
+/* Floating "Show map / Show list" switch, Airbnb style. */
+.kodi-map-toggle {
+  position: fixed; left: 50%; bottom: calc(24px + var(--kodi-safe-bottom, 0px)); z-index: 1031; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: .45rem; padding: .7rem 1.15rem; border: 0; border-radius: 999px;
+  font-weight: 700; font-size: .9rem; color: #fff; background: #10231c; box-shadow: 0 16px 34px -12px rgba(10, 40, 32, .7);
+  transition: transform .25s var(--kodi-ease), background .2s;
+}
+.kodi-map-toggle:hover { transform: translateX(-50%) scale(1.05); background: var(--kodi-primary); }
+.kodi-map-toggle:focus-visible { outline: 3px solid var(--kodi-accent); outline-offset: 3px; }
+body.is-signed-in .kodi-map-toggle { bottom: calc(88px + var(--kodi-safe-bottom, 0px)); }
+@media (min-width: 992px) { body.is-signed-in .kodi-map-toggle { bottom: 28px; } }
+:root[data-bs-theme="dark"] .kodi-map-toggle { background: #e8f3ee; color: #10231c; }
+
+/* ------------------------------------------------ detail mini map + landlord picker */
+.kodi-minimap { height: 240px; margin-bottom: 1rem; }
+.kodi-pickmap { height: 230px; border: 1px solid var(--kodi-border); cursor: crosshair; }
+.kodi-pickmap.leaflet-container { cursor: crosshair; }
+
+/* ------------------------------------------------ stars + rating chip */
+.kodi-stars { position: relative; display: inline-block; font-size: var(--s, 14px); line-height: 1; letter-spacing: 1px; white-space: nowrap; }
+.kodi-stars > span:first-child { color: color-mix(in srgb, var(--kodi-muted) 35%, transparent); }
+.kodi-stars > span:last-child { position: absolute; inset: 0 auto 0 0; width: var(--pct); overflow: hidden; color: var(--kodi-accent); }
+.kodi-rating { display: inline-flex; align-items: center; gap: .2rem; font-size: .85rem; font-weight: 600; white-space: nowrap; color: inherit; }
+.kodi-rating > span:first-child { color: var(--kodi-accent); font-size: .95em; }
+.kodi-rating b { font-weight: 800; }
+.kodi-rating > span:last-child { color: var(--kodi-muted); font-weight: 500; }
+.kodi-stay-title .kodi-rating { margin-left: auto; flex-shrink: 0; }
+
+/* ------------------------------------------------ review cards */
+.kodi-reviews { display: grid; gap: .9rem; }
+@media (min-width: 768px) { .kodi-detail .kodi-reviews { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kodi-review { padding: 1rem 1.1rem; border-radius: var(--kodi-radius-sm); background: var(--kodi-surface); border: 1px solid var(--kodi-border); }
+.kodi-review header { display: flex; align-items: center; gap: .7rem; }
+.kodi-avatar.sm { width: 36px; height: 36px; font-size: .95rem; flex-shrink: 0; }
+.kodi-verified { display: inline-flex; align-items: center; gap: .25rem; padding: .2rem .5rem; border-radius: 999px; flex-shrink: 0;
+  font-size: .72rem; font-weight: 700; color: var(--kodi-primary-ink); background: color-mix(in srgb, var(--kodi-primary) 12%, transparent); }
+.kodi-review-reply { margin-top: .75rem; padding: .7rem .85rem; border-radius: 12px; font-size: .92rem;
+  background: color-mix(in srgb, var(--kodi-primary) 7%, transparent); border-left: 3px solid var(--kodi-primary); }
+.kodi-review-reply strong { display: flex; align-items: center; gap: .3rem; font-size: .8rem; margin-bottom: .2rem; color: var(--kodi-primary-ink); }
+
+.kodi-review-summary { display: grid; gap: 1rem 2rem; align-items: center; margin-bottom: 1.1rem; }
+@media (min-width: 576px) { .kodi-review-summary { grid-template-columns: auto minmax(0, 1fr); } }
+.kodi-review-score { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; }
+.kodi-review-score > strong { font-size: 2.8rem; line-height: 1; font-weight: 800; letter-spacing: -.03em; }
+.kodi-review-bars { list-style: none; margin: 0; padding: 0; display: grid; gap: .3rem; max-width: 380px; }
+.kodi-review-bars li { display: grid; grid-template-columns: 2.4rem 1fr 1.6rem; align-items: center; gap: .55rem; font-size: .8rem; color: var(--kodi-muted); }
+.kodi-review-bars i { height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--kodi-muted) 20%, transparent); overflow: hidden; }
+.kodi-review-bars b { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--kodi-accent), #f3c879); }
+
+/* ------------------------------------------------ star input */
+.kodi-star-input { border: 0; padding: 0; margin: 0; }
+.kodi-star-row { display: flex; align-items: center; gap: .15rem; }
+.kodi-star-row label { font-size: 2.3rem; line-height: 1; padding: 0 .1rem; cursor: pointer; color: var(--kodi-accent);
+  transition: transform .15s var(--kodi-ease), color .15s; }
+.kodi-star-row:not(:has(:checked)) label, .kodi-star-row input:checked + label ~ label { color: color-mix(in srgb, var(--kodi-muted) 35%, transparent); }
+.kodi-star-row:hover label { color: var(--kodi-accent); }
+.kodi-star-row label:hover ~ label { color: color-mix(in srgb, var(--kodi-muted) 35%, transparent); }
+.kodi-star-row label:hover { transform: scale(1.15); }
+.kodi-star-row input:focus-visible + label { outline: 3px solid var(--kodi-accent); outline-offset: 2px; border-radius: 8px; }
+.kodi-star-word { margin-left: .6rem; font-weight: 700; font-size: .95rem; color: var(--kodi-muted); }
+
+/* ------------------------------------------------ tenant home nudge */
+.kodi-rate-nudge {
+  display: flex; align-items: center; gap: .85rem; margin: .25rem 0 1rem; padding: .9rem 1rem; border-radius: 20px;
+  color: inherit; text-decoration: none; border: 1px solid color-mix(in srgb, var(--kodi-accent) 40%, transparent);
+  background: linear-gradient(120deg, color-mix(in srgb, var(--kodi-accent) 16%, var(--kodi-surface-solid)), var(--kodi-surface-solid));
+  transition: transform .25s var(--kodi-ease), box-shadow .25s;
+}
+.kodi-rate-nudge:hover { transform: translateY(-2px); box-shadow: 0 16px 30px -18px rgba(150, 100, 20, .6); color: inherit; }
+.kodi-rate-stars { color: var(--kodi-accent); font-size: 1rem; letter-spacing: 1px; writing-mode: horizontal-tb; }
+.kodi-chipline { display: flex; flex-wrap: wrap; gap: .5rem; }
+.kodi-chipline .kodi-tag { text-decoration: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kodi-home-pin, .kodi-mapview-card { animation: none; }
+  .kodi-pin, .kodi-map-toggle, .kodi-rate-nudge, .kodi-star-row label { transition: none; }
+}

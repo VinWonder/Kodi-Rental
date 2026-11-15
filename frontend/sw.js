@@ -10,7 +10,7 @@
  */
 'use strict';
 
-const VERSION = '4.0.0';
+const VERSION = '4.1.0';
 const SHELL_CACHE = `kodi-shell-${VERSION}`;
 const RUNTIME_CACHE = 'kodi-runtime-v1';
 const DATA_CACHE = 'kodi-data-v1';
@@ -21,12 +21,12 @@ const MAX_FILES = 80;
 
 const SHELL = [
   '/', '/index.html', '/offline.html', '/manifest.json',
-  '/css/app.css', '/css/living.css', '/css/wow.css',
-  '/js/api.js', '/js/tilt.js', '/js/fx.js', '/js/twin.js', '/js/palette.js', '/js/smartsearch.js', '/js/app.js', '/js/calls.js', '/js/components.js', '/js/config.js', '/js/offline.js', '/js/pwa.js',
+  '/css/app.css', '/css/living.css', '/css/wow.css', '/css/places.css',
+  '/js/api.js', '/js/tilt.js', '/js/fx.js', '/js/twin.js', '/js/palette.js', '/js/smartsearch.js', '/js/map.js', '/js/app.js', '/js/calls.js', '/js/components.js', '/js/config.js', '/js/offline.js', '/js/pwa.js',
   '/js/realtime.js', '/js/router.js', '/js/shell.js', '/js/state.js', '/js/theme.js', '/js/ui.js', '/js/views/auth.js',
   '/js/views/billing.js', '/js/views/chat.js', '/js/views/dashboard.js', '/js/views/home.js', '/js/views/issues.js',
   '/js/views/leases.js', '/js/views/properties.js', '/js/views/reports.js', '/js/views/settings.js',
-  '/js/views/tenants.js', '/js/views/vacancies.js',
+  '/js/views/tenants.js', '/js/views/vacancies.js', '/js/views/reviews.js',
   '/vendor/bootstrap/bootstrap.min.css', '/vendor/bootstrap/bootstrap.bundle.min.js',
   '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-512.png',
   '/icons/apple-touch-icon.png', '/icons/badge-96.png', '/icons/favicon-32.png', '/icons/favicon.ico',

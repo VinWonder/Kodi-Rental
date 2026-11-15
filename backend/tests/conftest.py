@@ -61,6 +61,7 @@ SQL_FILES = [
     ROOT / "database" / "schema.sql",
     ROOT / "database" / "seeds" / "001_kenya_locations.sql",
     ROOT / "database" / "migrations" / "002_tenant_invites.sql",
+    ROOT / "database" / "migrations" / "003_property_reviews.sql",
 ]
 
 

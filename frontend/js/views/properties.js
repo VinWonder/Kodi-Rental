@@ -10,6 +10,7 @@ import { acct, state } from '../state.js';
 import { esc, fmtDate, fmtMoney, setBusy, timeAgo, toast } from '../ui.js';
 import { allocateModal } from './leases.js';
 import { filterTwin, twinHtml, wireTwin } from '../twin.js';
+import { createMap, homePin, NAIROBI } from '../map.js';
 
 const STATUS_FILTERS = ['all', 'vacant', 'occupied', 'reserved', 'under_maintenance', 'cleaning'];
 const MANUAL = ['vacant', 'under_maintenance', 'cleaning', 'inactive'];
@@ -33,13 +34,42 @@ async function propertyForm(existing = null) {
       ${field('amenities', 'Amenities', { value: (existing?.amenities || []).join(', '), dataType: 'list', col: 'col-12',
         placeholder: 'Borehole, CCTV, Parking, Backup generator', hint: 'Separate with commas. Shown on public listings.' })}
       ${field('description', 'Description', { type: 'textarea', value: existing?.description, col: 'col-12' })}
-      <div class="col-12"><div class="d-flex align-items-center gap-2">
+      <div class="col-12"><span class="form-label small fw-semibold d-block">Location on the map</span>
+        <div class="kodi-pickmap" data-pickmap role="region" aria-label="Map. Click or tap to place the building, or use the button below."></div>
+        <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
         <input type="hidden" name="latitude" value="${esc(existing?.latitude ?? '')}"><input type="hidden" name="longitude" value="${esc(existing?.longitude ?? '')}">
         <button type="button" class="btn btn-light btn-sm" data-locate>${icon('map', 16)} Use my current location</button>
-        <span class="small text-secondary" data-loc-text>${existing?.latitude ? `${existing.latitude}, ${existing.longitude}` : 'Helps tenants find "nearest" vacancies.'}</span>
+        <span class="small text-secondary flex-grow-1" data-loc-text aria-live="polite">${existing?.latitude ? `Pinned at ${existing.latitude}, ${existing.longitude}` : 'Tap the map to drop a pin. Pinned homes appear on the tenant map.'}</span>
       </div></div></div>`,
-    onReady: (form) => {
+    onReady: (form, modalEl) => {
       const sub = form.sub_county_id;
+      // Pin picker: tap the map or drag the pin; Kenya only (the API checks too).
+      const text = form.querySelector('[data-loc-text]');
+      let pickMap = null;
+      let pin = null;
+      const setPin = (lat, lng, { pan = false } = {}) => {
+        if (lat < -4.9 || lat > 5.1 || lng < 33.8 || lng > 42.0) { text.textContent = 'That spot is outside Kenya. Choose a place in Kenya.'; return; }
+        form.latitude.value = lat.toFixed(6);
+        form.longitude.value = lng.toFixed(6);
+        text.textContent = `Pinned at ${form.latitude.value}, ${form.longitude.value}`;
+        if (!pickMap) return;
+        const L = window.L;
+        if (!pin) {
+          pin = L.marker([lat, lng], { icon: homePin(L), draggable: true, keyboard: false }).addTo(pickMap);
+          pin.on('dragend', () => { const p = pin.getLatLng(); setPin(p.lat, p.lng); });
+        } else pin.setLatLng([lat, lng]);
+        if (pan) pickMap.setView([lat, lng], Math.max(pickMap.getZoom(), 16));
+      };
+      modalEl.addEventListener('shown.bs.modal', async () => {
+        const box = form.querySelector('[data-pickmap]');
+        const has = form.latitude.value !== '';
+        try {
+          pickMap = await createMap(box, { center: has ? [Number(form.latitude.value), Number(form.longitude.value)] : NAIROBI, zoom: has ? 16 : 11 });
+          if (has) setPin(Number(form.latitude.value), Number(form.longitude.value));
+          pickMap.on('click', (e) => setPin(e.latlng.lat, e.latlng.lng));
+        } catch { box.remove(); }
+      }, { once: true });
+      modalEl.addEventListener('hidden.bs.modal', () => pickMap?.remove(), { once: true });
       const loadSubs = async (countyId, selected) => {
         sub.innerHTML = '<option value="">Loading…</option>';
         if (!countyId) { sub.innerHTML = '<option value="">Choose county first</option>'; return; }
@@ -49,12 +79,9 @@ async function propertyForm(existing = null) {
       form.county_id.addEventListener('change', () => loadSubs(form.county_id.value));
       if (existing?.county_id) loadSubs(existing.county_id, existing.sub_county_id);
       form.querySelector('[data-locate]').addEventListener('click', () => {
-        const text = form.querySelector('[data-loc-text]');
         text.textContent = 'Locating…';
         navigator.geolocation.getCurrentPosition((p) => {
-          form.latitude.value = p.coords.latitude.toFixed(6);
-          form.longitude.value = p.coords.longitude.toFixed(6);
-          text.textContent = `${form.latitude.value}, ${form.longitude.value}`;
+          setPin(p.coords.latitude, p.coords.longitude, { pan: true });
         }, () => { text.textContent = 'Location unavailable. You can skip this.'; }, { enableHighAccuracy: true, timeout: 10000 });
       });
     },

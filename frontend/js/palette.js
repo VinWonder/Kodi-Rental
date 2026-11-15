@@ -17,13 +17,14 @@ const LANDLORD = [
   ['Settings', '/settings', 'settings', 'Go to'], ['M-Pesa setup', '/settings?tab=mpesa', 'phone', 'Go to'],
   ['Add a property', '/properties?new=1', 'plus', 'Action'], ['Add a tenant', '/tenants?new=1', 'plus', 'Action'],
   ['Record a payment', '/invoices?tab=payments&record=1', 'cash', 'Action'], ['Allocate a unit', '/leases?new=1', 'key', 'Action'],
-  ['Public vacancy listings', '/vacancies', 'search', 'Go to'],
+  ['Tenant reviews', '/reviews', 'star', 'Go to'], ['Public vacancy listings', '/vacancies', 'search', 'Go to'],
+  ['Vacancies on the map', '/vacancies?view=map', 'map', 'Go to'],
 ];
 const TENANT = [
   ['Home', '/', 'home', 'Go to'], ['Pay rent', '/invoices', 'cash', 'Action'], ['My payments', '/payments', 'receipt', 'Go to'],
   ['Report a problem', '/issues?new=1', 'wrench', 'Action'], ['My repairs', '/issues', 'wrench', 'Go to'],
   ['Message my landlord', '/chat', 'chat', 'Go to'], ['Statement', '/statement', 'receipt', 'Go to'],
-  ['My lease', '/lease', 'pen', 'Go to'], ['Settings', '/settings', 'settings', 'Go to'], ['Find a house', '/vacancies', 'search', 'Go to'],
+  ['My lease', '/lease', 'pen', 'Go to'], ['Settings', '/settings', 'settings', 'Go to'], ['Rate my home', '/reviews', 'star', 'Action'], ['Find a house', '/vacancies', 'search', 'Go to'],
 ];
 
 let el = null;

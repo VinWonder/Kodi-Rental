@@ -13,7 +13,7 @@ from .config import Settings, get_settings
 from .db import db
 from .errors import register_exception_handlers
 from .routers import (accounts, auth, billing, chat, hooks, issues, leases, media, mpesa, notifications,
-                      properties, public, realtime, reports, tenants, units)
+                      properties, public, realtime, reports, reviews, tenants, units)
 from .security import SecretBox
 from .services.daraja import DarajaClient
 from .services.push import PushSender
@@ -69,7 +69,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     api = APIRouter(prefix="/api/v1")
     for module in (auth, accounts, properties, units, tenants, leases, billing, mpesa, issues, chat,
-                   notifications, media, reports, public):
+                   notifications, media, reports, public, reviews):
         api.include_router(module.router)
     app.include_router(api)
     app.include_router(hooks.router)      # /hooks/{token}/...  (Safaricom)
